@@ -1,10 +1,8 @@
 
-# Aedes-MQTT-Broker
+# mqtt-devices-parser
 
-MQTT broker working in cluster mode. Number of workers can be set using WORKERS var env.
-
-## TODO
-- MQTTS
+MQTT parser
+Parses topics received from devices and updates data on dB
 
 ## Setup
 
@@ -18,6 +16,9 @@ MQTT broker working in cluster mode. Number of workers can be set using WORKERS 
   4. registers projects and models/apps if not registered already
 
 ## Working mode
+
+### Command
+  >> node index
 
   1. Checks all projects inside src/projects folder and enable it if is activated in config/index.js
 
