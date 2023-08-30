@@ -54,8 +54,11 @@ Parses topics received from devices and updates data on dB
   Calling the following methods will write data in a ${table} with the name of the project, and also
   in other table called "logs_"+${table}. Data will be written if there is a field in the respective table
   with the same name as the name in topic.
-    $.db_data.update(project,device?.id,topic,payload);
-    $.db_data.addLog("logs_"+project,device.id,topic,payload);
+
+  ```
+  $.db_data.update(project,device?.id,topic,payload);
+  $.db_data.addLog("logs_"+project,device.id,topic,payload);
+  ```
 
 ## UnitTest
 
