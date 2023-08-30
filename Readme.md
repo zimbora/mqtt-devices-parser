@@ -6,34 +6,66 @@ MQTT broker working in cluster mode. Number of workers can be set using WORKERS 
 ## TODO
 - MQTTS
 
+## Setup
+
+### Command
+  >> node deploy
+
+  1. build/sync all tables inside models folder
+  2. registers users and clients if not registered already
+
+  3. build/sync all tables inside projects folder
+  4. registers projects and models/apps if not registered already
+
 ## Working mode
 
-### Users
-This program uses a mysql database to check users access and permissions
+  1. Checks all projects inside src/projects folder and enable it if is activated in config/index.js
 
-On table `users` are the authorized accounts to access MQTT broker.\
-If an account is registered with level 4/5, that account has full access.\
-Otherwise, the access must be checked through table `permissions`
+  2. Connects to defined MQTT broker
 
-### Devices and Clients
-The registered `clientId` is used to check if a subscription or a publish are authorized for the respective topics.\
-A `device` will only be allowed to publish on it's own topic and it must contains `uid:`.
-This `uid:` identifies the device referred on the topic and is used to check if a
-`clientId` has permission to write on the topic. Those privileges are defined in `permissions` table.\
-If the `level` of `clientId` is >= 3 publish and subscribe on the respective topic are granted\
-If the `level` of `clientId` is >= 1 and < 3 only subscribe on the respective topic is granted
+  3. Parse MQTT messages starting with :project/MACRO_UID_PREFIX+uid/
 
-### Devices configurations
-If a client writes on topics :project/:uid/fw/settings or :project/:uid/app/settings that data will be store in database. If this written is made by a device, the data will be only stored if there's no data in db. In the other hand, if the there is data in db and that data is different from the one that device sent, this service will try to update the device, keeping it synced.\
-The exception is for WIFI ssid and password, topic :project/:uid/fw/settings/wifi. The device has always control over this topic, yet it can accept changes when it is connected.
+    3.1 register device if not exists
+    3.2 Associate to a project if project is registered
+    3.3 Associate to a model/app if model is registered
+
+  4. Call project parseMessage function
+
+## Instructions
+
+  Projects folders must be kept
+
+  The following functions must exist inside a file with the same name of the project
+
+  ```
+  module.exports = {
+    sync_db : async()=>{
+    },
+    init : async ()=>{
+    },
+    parseMessage : async (client, project, device, topic, payload, retain, cb)=>{
+    },
+  }
+  ```
+
+  Ex: If project name is freeRTOS2, so must exist a file in projects/freeRTOS2/freeRTOS2.js.
+
+  Calling the following methods will write data in a ${table} with the name of the project, and also
+  in other table called "logs_"+${table}. Data will be written if there is a field in the respective table
+  with the same name as the name in topic.
+    $.db_data.update(project,device?.id,topic,payload);
+    $.db_data.addLog("logs_"+project,device.id,topic,payload);
+
+## UnitTest
+
 
 ## Dependencies
 
-- mysql8.0 running with the following [db](https://github.com/zimbora/mgmt-iot-web/blob/master/mysql/schema.mwb)
-- Node service running the following [project](https://github.com/zimbora/mgmt-iot-web)
+- mysql8.0
+- MQTT
 
-## Problems
-!! messages with retain flag should be published with qos=2
+## Front end
+- Node service running the following [project](https://github.com/zimbora/mgmt-iot-web)
 
 ## Configuration
 
