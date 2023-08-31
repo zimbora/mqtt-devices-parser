@@ -102,7 +102,7 @@ services:
       - my-db:/var/lib/mysql
   mqtt-devices-parser:
     #build: ./mqtt-devices-parser
-    image: mqtt:1.0.1
+    image: zimbora:mqtt-devices-parser
     restart: unless-stopped
     command: sh -c "node deploy && node index.js"
     environment:

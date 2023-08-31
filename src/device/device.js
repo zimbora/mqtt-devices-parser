@@ -69,7 +69,7 @@ var self = module.exports = {
       if(topic.endsWith("status")){
         if(payload == "online" || payload == "offline")
           await $.db_device.updateStatus(uid,payload);
-
+        console.log(project_name,uid,payload)
       }else if(topic.endsWith("model")){
         let res = await $.db_model.getByName(payload);
         let model_id = res?.id;

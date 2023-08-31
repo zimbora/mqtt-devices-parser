@@ -12,7 +12,8 @@ module.exports = {
     port:process.env.MQTT_PORT || '1883',
     user:process.env.MQTT_USER || 'admin',
     pwd:process.env.MQTT_PWD || 'admin',
-    client:process.env.MQTT_CLIENT || 'mqtt-devices-parser'
+    client:process.env.MQTT_CLIENT || 'mqtt-devices-parser',
+    logs_path: process.env.MQTT_LOGS || 'uServices'
   },
   mysqldb: {
     conn_limit: process.env.DB_CONN_LIMIT || 15,

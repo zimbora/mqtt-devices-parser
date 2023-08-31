@@ -1,6 +1,6 @@
 {
   "name": "mqtt_broker_auth",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,16 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aedes": "^0.48.1",
-    "aedes-persistence-mongodb": "^9.1.1",
-    "aedes-persistence-redis": "^9.0.2",
     "async": "^3.2.4",
-    "cluster": "^0.7.7",
     "lodash": "^4.17.21",
     "md5": "^2.3.0",
     "moment": "^2.29.4",
-    "mqemitter-mongodb": "^8.1.0",
-    "mqemitter-redis": "^5.0.0",
     "mqtt": "^5.0.3",
     "mysql2": "^3.2.0",
     "net": "^1.0.2",

@@ -81,9 +81,16 @@ var self = module.exports = {
             return resolve();
 
          tables.forEach(async(tableName,counter)=>{
-            await self.dropAllIndexes(tableName);
-            if(counter == tables.length-1)
-               return resolve();
+            self.dropAllIndexes(tableName)
+            .then(res =>{
+               if(counter == tables.length-1)
+                  return resolve();
+            })
+            .catch(error => {
+               if(counter == tables.length-1)
+                  return resolve();
+            });
+
          });
       });
    },
@@ -94,27 +101,36 @@ var self = module.exports = {
          // Fetch all indexes from the table
          let query = `SHOW INDEXES FROM ??`
          query = mysql.format(query,[tableName]);
-         const indexes = await sequelize.query(query);
 
-         // Filter out primary key index and unique indexes if you don't want to drop them
-         const filteredIndexes = indexes[0].filter(index => index.Key_name !== 'PRIMARY' && !index.Non_unique);
+         var indexes;
+         sequelize.query(query)
+         .then(res=>{
+            indexes = res;
 
-         console.log(filteredIndexes);
-         if(!filteredIndexes?.length)
-            return resolve();
+            // Filter out primary key index and unique indexes if you don't want to drop them
+            const filteredIndexes = indexes[0].filter(index => index.Key_name !== 'PRIMARY' && !index.Non_unique);
 
-         // Drop each index
-         filteredIndexes.forEach( async(index,counter)=>{
-            try{
+            if(!filteredIndexes?.length)
+               return resolve();
+
+            // Drop each index
+            filteredIndexes.forEach( async(index,counter)=>{
                let query = `DROP INDEX ?? ON ??`
                query = mysql.format(query,[index.Key_name,tableName]);
-               await sequelize.query(query);
-            }catch (error) {
-               console.error('Error:', error);
-            }
-            console.log(`Dropped index ${index.Key_name}`);
-            if(counter == filteredIndexes.length-1)
-               return resolve();
+               sequelize.query(query)
+               .then(res=>{
+                  console.log(`Dropped index ${index.Key_name}`);
+                  if(counter == filteredIndexes.length-1)
+                     return resolve();
+               })
+               .catch(error=>{
+                  if(counter == filteredIndexes.length-1)
+                     return resolve();
+               })
+            })
+         })
+         .catch(error=>{
+            return resolve();
          })
       });
    },

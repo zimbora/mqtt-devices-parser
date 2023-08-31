@@ -2,6 +2,7 @@ const mqtt = require("mqtt");
 const fs = require('fs');
 
 $ = {};
+$.md5 = require('md5');
 
 $.config = require('./config');
 $.models = require('./models/models.js');
@@ -13,23 +14,37 @@ $.db_device = require('./src/db/device');
 $.db_model = require('./src/db/model');
 $.db_firmware = require('./src/db/firmware');
 
+const packageJson = require(__dirname+'/package.json');
+const packageVersion = packageJson.version;
+
 var projectsPath = './src/projects/';
 var projects = [];
 
 function mqtt_connect(){
+
+  const mqtt_prefix = $.config.mqtt.logs_path+"/"+$.config.mqtt.client;
   const client = mqtt.connect({
     host : $.config.mqtt.host,
     port : $.config.mqtt.port,
     username : $.config.mqtt.user,
     password : $.config.mqtt.pwd,
     clientId : $.config.mqtt.client,
-    protocolId : $.config.mqtt.protocol
+    protocolId : $.config.mqtt.protocol,
+    will : {
+      topic: mqtt_prefix+"/status",
+      payload: "offline",
+      qos: 2,
+      retain: true
+    }
   });
-
   client.on("connect", () => {
+
+    client.publish(mqtt_prefix+"/status","online",{qos:2,retain:true});
+    client.publish(mqtt_prefix+"/version",packageVersion,{qos:2,retain:true});
 
     projects.map( (project)=>{
       client.subscribe(project+"/#", (err) => {});
+      client.publish(mqtt_prefix+"/"+project,"active");
     })
 
   });
