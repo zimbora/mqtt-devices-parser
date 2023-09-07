@@ -9,6 +9,7 @@ var self = module.exports = {
         console.log("MYSQL is connected");
 
         projects.map( async (name,counter)=>{
+          console.log("project:",name)
           project[name] = {
             module : null
           };
@@ -62,7 +63,6 @@ var self = module.exports = {
       if(device?.project_id == null){
         let res = await $.db_project.getByName(project_name);
         let project_id = res?.id;
-
         if(project_id != null) $.db_device.updateProject(uid,project_id);
       }
 

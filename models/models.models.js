@@ -8,14 +8,30 @@ module.exports = (sequelize,DataTypes)=>{
 		description: {
 			type: DataTypes.STRING
 		},
-		model_table: {
+		model_table: { // deprecated
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		logs_table: {
+		logs_table: { // deprecated
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		fw_enabled: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		ar_enabled: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		alarms_enabled: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		js_code_enabled: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		}
 	},
 	{
 		tableName: 'models',

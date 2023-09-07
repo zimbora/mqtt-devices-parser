@@ -25,7 +25,7 @@ module.exports = {
   },
   sync_main_tables : process.env.sync_main_tables || true,
   projects: {
-    freeRTOS2 : process.env.freeRTOS2 || true,
-    rtls_linux : process.env.rtls_linux || false,
+    freeRTOS2 : process.env.freeRTOS2 || false,
+    'rtls-linux' : process.env.rtls_linux || true,
   }
 }

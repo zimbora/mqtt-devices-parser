@@ -119,7 +119,7 @@ var self = module.exports = {
         if (typeof data === "object") {
           const keys = Object.keys(data);
           values = Object.values(data);
-          query = `UPDATE ${table} SET ${keys.map(key => `${key} = ?`).join(', ')}`;
+          query = `UPDATE ?? SET ${keys.map(key => `${key} = ?`).join(', ')}`;
         } else {
           return reject("data passed is not an object");
         }
@@ -133,6 +133,7 @@ var self = module.exports = {
           return reject("filter passed is not an object");
         }
 
+        values.unshift(table);
         query = mysql.format(query, values);
 
         conn.query(query, function (err, rows) {

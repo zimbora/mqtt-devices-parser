@@ -37,6 +37,7 @@ function mqtt_connect(){
       retain: true
     }
   });
+
   client.on("connect", () => {
 
     client.publish(mqtt_prefix+"/status","online",{qos:2,retain:true});
@@ -44,7 +45,13 @@ function mqtt_connect(){
 
     projects.map( (project)=>{
       client.subscribe(project+"/#", (err) => {});
-      client.publish(mqtt_prefix+"/"+project,"active");
+
+      for(let project in $.config.projects){
+        if($.config.projects[project])
+          client.publish(mqtt_prefix+"/"+project,"active");
+        else
+          client.publish(mqtt_prefix+"/"+project,"deactive");
+      };
     })
 
   });
@@ -83,6 +90,7 @@ async function init(){
       return (file.indexOf('.') == -1);
     })
     .forEach((project) => {
+      console.log("$.config.projects[project]:",$.config.projects[project])
       if($.config.projects[project])
         projects.push(project);
     });

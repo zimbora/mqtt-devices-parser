@@ -96,10 +96,10 @@ var self = module.exports = {
 				let key = topic;
 				if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
 					// build object with respective data
-					  if(typeof data === "object")
-					obj[key] = JSON.stringify(data);
+					if(typeof data === "object")
+						obj[key] = JSON.stringify(data);
 					else
-					obj[key] = data;
+						obj[key] = data;
 
 					let exists = await self.checkEntry(table,deviceId);
 					if(!exists){
