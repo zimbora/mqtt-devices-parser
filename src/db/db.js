@@ -178,7 +178,53 @@ var self = module.exports = {
         }
 
         query = mysql.format(query, values);
+        conn.query(query, function (err, rows) {
+          self.close_db_connection(conn);
+          if(rows.affectedRows && !rows.changedRows){
+            self.insertJSON(table,column,data,filter)
+            .then( rows => {
+              return resolve(rows);
+            })
+            .catch( err => {
+              return reject(err);
+            })
+          }else{
+            if (err) return reject(err);
+            else return resolve(rows);
+          }
+        });
+      });
+    });
+  },
 
+  insertJSON : async (table, column, data, filter) => {
+
+    return new Promise((resolve, reject) => {
+      self.getConnection((err, conn) => {
+        if (err) return reject(err);
+
+        let query = "";
+        let values = [];
+
+        if (typeof data === "object") {
+          const jsonString = JSON.stringify(data);
+          query = `UPDATE ?? SET ?? = ?`;
+          const inserts = [table, column, jsonString];
+          query = mysql.format(query, inserts);
+        } else {
+          return reject("data passed is not an object");
+        }
+
+        if (typeof filter === "object") {
+          const filterKeys = Object.keys(filter);
+          const filterValues = Object.values(filter);
+          query += ` WHERE ${filterKeys.map(key => `${key} = ?`).join(' AND ')}`;
+          values.push(...filterValues);
+        } else {
+          return reject("filter passed is not an object");
+        }
+
+        query = mysql.format(query, values);
         conn.query(query, function (err, rows) {
           self.close_db_connection(conn);
           if (err) return reject(err);
