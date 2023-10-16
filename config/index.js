@@ -1,10 +1,9 @@
 module.exports = {
-  version : "1.0.1",
+  version : "0.0.0",
   dev : process.env.dev || "true",
   web:{
     protocol : process.env.HTTP_PROTOCOL  || "http://",
-    domain: process.env.DOMAIN            || '192.168.1.101',
-    fw_path : '/api/firmware/'
+    domain: process.env.DOMAIN            || '192.168.1.1',
   },
   mqtt: {
     protocol:process.env.MQTT_PROTOCOL || 'MQTT',
@@ -25,7 +24,6 @@ module.exports = {
   },
   sync_main_tables : process.env.sync_main_tables || true,
   projects: {
-    freeRTOS2 : process.env.freeRTOS2 || false,
-    'rtls-linux' : process.env.rtls_linux || true,
+    demo : process.env.demo || false,
   }
 }

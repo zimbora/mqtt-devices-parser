@@ -1,6 +1,6 @@
 {
-  "name": "mqtt_broker_auth",
-  "version": "1.0.4",
+  "name": "mqtt-devices-parser",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {

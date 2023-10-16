@@ -40,7 +40,7 @@ var self = module.exports = {
 			}
 
 			let obj = {
-				updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
 
 			let db_columns = $.models.get(table);
@@ -67,7 +67,7 @@ var self = module.exports = {
 				  let exists = await self.checkEntry(table,deviceId);
 				  if(!exists){
 				    obj['device_id'] = deviceId;
-				    obj['createdAt'] = moment().format('YYYY-MM-DD HH:mm:ss');
+				    obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
 				    $.db.insert(table,obj)
 				    .then((rows)=>{
 				    	return resolve(rows);
@@ -104,7 +104,7 @@ var self = module.exports = {
 					let exists = await self.checkEntry(table,deviceId);
 					if(!exists){
 						obj['device_id'] = deviceId;
-						obj['createdAt'] = moment().format('YYYY-MM-DD HH:mm:ss');
+						obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
 						$.db.insert(table,obj)
 						.then((rows)=>{
 							return resolve(rows);
@@ -147,7 +147,7 @@ var self = module.exports = {
 		}
 
 		let obj = {
-			updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+			updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 		}
 
 		let db_columns = $.models.get(table);
@@ -171,7 +171,7 @@ var self = module.exports = {
 			    obj[key] = JSON.stringify(parser.pathIntoObject(topic,data));
 
 			  obj['device_id'] = deviceId;
-			  obj['createdAt'] = moment().format('YYYY-MM-DD HH:mm:ss');
+			  obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
 			  $.db.insert(table,obj)
 
 			}
@@ -186,7 +186,7 @@ var self = module.exports = {
 			    obj[key] = data;
 
 			  obj['device_id'] = deviceId;
-			  obj['createdAt'] = moment().format('YYYY-MM-DD HH:mm:ss');
+			  obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
 			  $.db.insert(table,obj);
 			}
 		}

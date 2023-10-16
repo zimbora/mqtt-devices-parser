@@ -1,5 +1,7 @@
 
 var project = [];
+const logs_table = "sensor_logs";
+
 var self = module.exports = {
 
   init : async (projects)=>{
@@ -13,7 +15,7 @@ var self = module.exports = {
           project[name] = {
             module : null
           };
-          project[name].module = require('../projects/'+name+'/'+name+".js")
+          project[name].module = require(`${BASE_DIR}/projects/${name}/${name}.js`)
           project[name].module?.init();
           let row = await $.db_project.getByName(name);
           if(row == null)
@@ -75,7 +77,13 @@ var self = module.exports = {
         let model_id = res?.id;
 
         if(model_id != null) $.db_device.updateModel(uid,model_id);
+      }
 
+      if(device.project_id != null && device.model_id != null){
+        let res = await $.db_sensor.getByRef(topic)
+        if(res != null){
+          $.db_sensor.insert(logs_table,device.id,res.id,payload);
+        }
       }
 
       if(project[project_name]){

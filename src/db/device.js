@@ -29,8 +29,8 @@ var self = module.exports = {
 		return new Promise((resolve,reject) => {
 			let obj = {
 				uid : uid,
-				createdAt : moment().format('YYYY-MM-DD HH:mm:ss'),
-				updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
 
 		    $.db.insert("devices",obj)
@@ -48,7 +48,7 @@ var self = module.exports = {
 
 		    let obj = {
 		      status : status,
-		      updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 		    };
 
 		    let filter = {
@@ -70,7 +70,7 @@ var self = module.exports = {
 
 		    let obj = {
 		      project_id : project_id,
-		      updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 		    };
 
 		    let filter = {
@@ -92,7 +92,7 @@ var self = module.exports = {
 
 		    let obj = {
 		      model_id : model_id,
-		      updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 		    };
 
 		    let filter = {

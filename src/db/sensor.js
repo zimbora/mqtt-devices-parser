@@ -1,15 +1,16 @@
 const moment = require('moment');
 var mysql = require('mysql2')
+const table = "sensors"
 
 var self = module.exports = {
 
-	getById : async (projectId)=>{
+	getById : async (id)=>{
 
 	  return new Promise((resolve,reject) => {
 
 	    let query = "SELECT * FROM ?? where id = ?";
-	    let table = ["models",projectId];
-	    query = mysql.format(query,table);
+	    let args = [table,id];
+	    query = mysql.format(query,args);
 
 	    $.db.queryRow(query)
 	    .then( rows => {
@@ -25,13 +26,35 @@ var self = module.exports = {
 	  });
 	},
 
-	getByName : async (model)=>{
+	getByRef : async (ref)=>{
+
+	  return new Promise((resolve,reject) => {
+
+	    let query = "SELECT * FROM ?? where ref = ?";
+	    let args = [table,ref];
+	    query = mysql.format(query,args);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	      if(rows.length > 0)
+	        return resolve(rows[0]);
+	      else
+	        return resolve(null);
+	    })
+	    .catch( err => {
+	      console.log(err);
+	      return resolve(null);
+	    });
+	  });
+	},
+
+	getByName : async (name)=>{
 
 	  return new Promise((resolve,reject) => {
 
 	    let query = "SELECT * FROM ?? where name = ?";
-	    let table = ["models",model];
-	    query = mysql.format(query,table);
+	    let args = [table,name];
+	    query = mysql.format(query,args);
 
 	    $.db.queryRow(query)
 	    .then( rows => {
@@ -52,8 +75,8 @@ var self = module.exports = {
 	  return new Promise((resolve,reject) => {
 
 	    let query = "SELECT id,name FROM ??";
-	    let table = ["models"];
-	    query = mysql.format(query,table);
+	    let args = [table];
+	    query = mysql.format(query,args);
 
 	    $.db.queryRow(query)
 	    .then( rows => {
@@ -66,43 +89,18 @@ var self = module.exports = {
 	  });
 	},
 
-	insert : async(model, model_table, logs_table)=>{
+	insert : async(table,deviceId,sensorId,payload)=>{
 
 		return new Promise((resolve,reject) => {
 			let obj = {
-				name : model,
-				model_table : model_table,
-				logs_table : logs_table,
+				device_id : deviceId,
+				sensor_id : sensorId,
+				value : payload,
 				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
 				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
 
-		    $.db.insert("models",obj)
-		    .then (rows => {
-		      return resolve(rows[0]);
-		    })
-		    .catch(error => {
-		      return reject(error);
-		    });
-		});
-  	},
-
-  	update : async(model, model_table, logs_table)=>{
-
-		return new Promise((resolve,reject) => {
-			let obj = {
-				name : model,
-				model_table : model_table,
-				logs_table : logs_table,
-				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-			};
-
-			let filter = {
-				name : model
-			};
-
-		    $.db.update("models",obj,filter)
+		    $.db.insert(table,obj)
 		    .then (rows => {
 		      return resolve(rows[0]);
 		    })

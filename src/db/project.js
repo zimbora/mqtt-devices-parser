@@ -74,8 +74,8 @@ var self = module.exports = {
 				name : project,
 				project_table : project_table,
 				logs_table : logs_table,
-				createdAt : moment().format('YYYY-MM-DD HH:mm:ss'),
-				updatedAt : moment().format('YYYY-MM-DD HH:mm:ss')
+				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
 
 		    $.db.insert("projects",obj)
