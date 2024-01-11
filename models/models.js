@@ -6,24 +6,22 @@ var mysql = require('mysql2');
 var sequelize;
 
 //var modelsPath = './models/';
-var config = require('../config');
 
 var self = module.exports = {
 
-   init : async ()=>{
+  init : async (config)=>{
 
-      return new Promise((resolve,reject) => {
-         sequelize = new Sequelize(
-            config.mysqldb.name,
-            config.mysqldb.user,
-            config.mysqldb.pwd,
-            {
-               host: config.mysqldb.host,
-               dialect: 'mysql'
-            },
-         );
-         return resolve(sequelize);
-      })
+    return new Promise((resolve,reject) => {
+       sequelize = new Sequelize({
+          database: config.mysqldb.name,
+          username: config.mysqldb.user,
+          password: config.mysqldb.pwd,
+          host: config.mysqldb.host,
+          port: config.mysqldb.port,
+          dialect: 'mysql',
+       });
+       return resolve(sequelize);
+     })
    },
 
    connect : async ()=>{
@@ -223,4 +221,3 @@ var self = module.exports = {
    }
 
 }
-

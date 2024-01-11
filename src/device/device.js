@@ -4,10 +4,10 @@ const logs_table = "sensor_logs";
 
 var self = module.exports = {
 
-  init : async (projects)=>{
+  init : async (config,projects)=>{
 
     return new Promise(async (resolve,reject) => {
-      $.db.connect(()=>{
+      $.db.connect(config,()=>{
         console.log("MYSQL is connected");
 
         projects.map( async (name,counter)=>{
@@ -94,4 +94,3 @@ var self = module.exports = {
   },
 
 }
-

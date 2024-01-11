@@ -32,11 +32,11 @@ var self = module.exports = {
       if(_projects != null)
         projects = _projects;
 
-      await $.models.init();
+      await $.models.init(_config);
       await $.models.connect();
 
       //auth.init();
-      await $.device.init(projects);
+      await $.device.init(_config,projects);
 
       console.log("mqtt connecting..")
       mqtt_connect();
@@ -173,5 +173,3 @@ function mqtt_connect(){
     console.log(error)
   })
 }
-
-

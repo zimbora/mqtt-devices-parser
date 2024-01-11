@@ -1,10 +1,9 @@
-var config = require('../../config');
 var mysql = require('mysql2');
 
 var pool;
 
 var self = module.exports = {
-  connect : (cb)=>{
+  connect : (config,cb)=>{
     pool      =    mysql.createPool({
       connectionLimit : config.mysqldb.conn_limit,
       host     : config.mysqldb.host,
@@ -312,4 +311,3 @@ var self = module.exports = {
     });
   }
 }
-

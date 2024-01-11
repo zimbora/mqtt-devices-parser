@@ -55,7 +55,7 @@ let client = {
 };
 
 async function setup(){
-  await $.models.init();
+  await $.models.init($.config);
   await $.models.connect();
 }
 
@@ -70,7 +70,7 @@ async function test1(){
       projects.push(project);
     });
 
-  await $.device.init(projects);
+  await $.device.init($.config,projects);
 
   topics.forEach((topic,counter)=>{
 
@@ -87,4 +87,3 @@ async function test1(){
 
 setup();
 test1();
-
