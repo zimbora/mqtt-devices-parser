@@ -1,3 +1,6 @@
+# 1.0.4
+	- mqtt: adds retain to project state
+
 # 1.0.3
 	-	fixes config arg
 

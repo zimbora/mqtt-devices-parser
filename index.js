@@ -136,9 +136,9 @@ function mqtt_connect(){
 
       for(let project in $.config.projects){
         if($.config.projects[project])
-          client.publish(mqtt_prefix+"/"+project,"active");
+          client.publish(mqtt_prefix+"/"+project,"active",{qos:2,retain:true});
         else
-          client.publish(mqtt_prefix+"/"+project,"deactive");
+          client.publish(mqtt_prefix+"/"+project,"deactive",{qos:2,retain:true});
       };
     })
     console.log(`MQTT connected to: ${$.config.mqtt.host}:${$.config.mqtt.port}`);
