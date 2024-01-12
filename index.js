@@ -92,12 +92,13 @@ var self = module.exports = {
       await $.models.dropTableIndexes();
       await $.models.sync();
 
-      let user = await $.models.insertUser("admin","admin",5); // ads user
-      //console.log(user);
+      // adds user for mqtt with admin credentials
+      let user = await $.models.insertUser($.config.mqtt.user,$.config.mqtt.pwd,5);
       let user_id = user.dataValues.id;
       await $.models.insertUser("device","device",3);
       await $.models.insertUser("client","client_pwd",3);
-      await $.models.insertClient("admin","admin",user_id); // ads client with credentials admin@admin
+      // adds client with credentials admin@admin
+      await $.models.insertClient("admin","admin",user_id); // dashboard login
     }
 
     // project tables

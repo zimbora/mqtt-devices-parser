@@ -1,3 +1,6 @@
+# 1.0.5
+	- db: adds mqtt user passed on mqtt struct and grants admin privileges
+
 # 1.0.4
 	- mqtt: adds retain to project state
 

@@ -33,3 +33,7 @@
 
 The default configuration uses ./config/index.js file\
 In your program set the same struct and pass it as argument on the module init call.
+
+An mqtt account will be created using the following settings
+mqtt.user - mqtt user login
+mqtt.pwd - mqtt pwd login
