@@ -1,3 +1,6 @@
+# 1.0.3
+	-	fixes config arg
+
 # 1.0.2
 	-	passes config struct por methods
 
