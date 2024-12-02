@@ -1,3 +1,6 @@
+# 1.0.6
+	- device: updates project if mismatch
+	
 # 1.0.5
 	- db: adds mqtt user passed on mqtt struct and grants admin privileges
 
