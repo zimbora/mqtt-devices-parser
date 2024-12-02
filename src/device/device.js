@@ -62,11 +62,11 @@ var self = module.exports = {
         .catch( (err) => {});
       }
 
-      if(device?.project_id == null){
-        let res = await $.db_project.getByName(project_name);
-        let project_id = res?.id;
-        if(project_id != null) $.db_device.updateProject(uid,project_id);
-      }
+      // update project id if needed
+      let res = await $.db_project.getByName(project_name);
+      let project_id = res?.id;
+      if(project_id != null && project_id != device?.project_id) 
+        $.db_device.updateProject(uid,project_id);
 
       if(topic.endsWith("status")){
         if(payload == "online" || payload == "offline")
