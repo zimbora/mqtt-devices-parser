@@ -31,6 +31,10 @@ module.exports = (sequelize,DataTypes)=>{
 				key: 'id'
 			}
 		},
+		tech: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
 	},
 	{
 		tableName: 'devices',

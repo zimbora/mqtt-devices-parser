@@ -77,6 +77,8 @@ var self = module.exports = {
         let model_id = res?.id;
 
         if(model_id != null) $.db_device.updateModel(uid,model_id);
+      }else if(topic.endsWith("tech")){
+        await $.db_device.updateTech(uid,payload);
       }
 
       if(device.project_id != null && device.model_id != null){
