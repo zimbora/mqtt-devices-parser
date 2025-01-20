@@ -3,7 +3,8 @@ module.exports = {
   dev : process.env.dev || "true",
   web:{
     protocol : process.env.HTTP_PROTOCOL  || "http://",
-    domain: process.env.DOMAIN            || '192.168.1.1',
+    domain: process.env.DOMAIN            || '10.168.1.162',
+    port: process.env.WEB_PORT            || 8002,
   },
   mqtt: {
     protocol:process.env.MQTT_PROTOCOL || 'MQTT',

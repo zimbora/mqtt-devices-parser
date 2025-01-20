@@ -10,27 +10,19 @@ var self = module.exports = {
 	    let query = "";
 		let table = [];
 
-		if(release == "stable"){
-			query = `SELECT fw_version,filename,token FROM firmwares where model_id = ? and fw_release = ? ORDER BY CAST(SUBSTRING_INDEX(fw_version, '.', 1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(fw_version, '.', -1) AS UNSIGNED) DESC
-			 LIMIT 1`;
-			table = [modelId,release];
-		}else{
-			query = `SELECT fw_version,filename,token FROM firmwares where model_id = ? ORDER BY CAST(SUBSTRING_INDEX(fw_version, '.', 1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(fw_version, '.', -1) AS UNSIGNED) DESC
-			 LIMIT 1`;
-			table = [modelId];
-		}
+		query = `SELECT fw_version,filename,token FROM firmwares where model_id = ? and fw_release = ? ORDER BY CAST(SUBSTRING_INDEX(fw_version, '.', 1) AS UNSIGNED) DESC,
+		 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
+		 CAST(SUBSTRING_INDEX(fw_version, '.', -1) AS UNSIGNED) DESC
+		 LIMIT 1`;
+		table = [modelId,release];
 
 	    query = mysql.format(query,table);
 
 	    $.db.queryRow(query)
 	    .then( rows => {
-	      if(rows.length > 0)
+	      if(rows.length > 0){
 	        return resolve(rows[0]);
-	      else
+	      }else
 	        return resolve(null);
 	    })
 	    .catch( err => {
@@ -47,19 +39,11 @@ var self = module.exports = {
 	    let query = "";
 		let table = [];
 
-		if(release == "stable"){
-			query = `SELECT app_version,filename,token FROM firmwares where model_id = ? and fw_release = ? ORDER BY CAST(SUBSTRING_INDEX(app_version, '.', 1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(app_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(app_version, '.', -1) AS UNSIGNED) DESC
-			 LIMIT 1`;
-			table = [modelId,release];
-		}else{
-			query = `SELECT app_version,filename,token FROM firmwares where model_id = ? ORDER BY CAST(SUBSTRING_INDEX(app_version, '.', 1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(app_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
-			 CAST(SUBSTRING_INDEX(app_version, '.', -1) AS UNSIGNED) DESC
-			 LIMIT 1`;
-			table = [modelId];
-		}
+		query = `SELECT app_version,filename,token FROM firmwares where model_id = ? and fw_release = ? ORDER BY CAST(SUBSTRING_INDEX(app_version, '.', 1) AS UNSIGNED) DESC,
+		 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(app_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
+		 CAST(SUBSTRING_INDEX(app_version, '.', -1) AS UNSIGNED) DESC
+		 LIMIT 1`;
+		table = [modelId,release];
 
 	    query = mysql.format(query,table);
 
