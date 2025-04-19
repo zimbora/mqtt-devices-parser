@@ -84,7 +84,7 @@ var self = module.exports = {
         await $.db_device.updateTech(uid,payload);
       }else if(topic.endsWith("fw_version")){
         let fw_version = await $.db.getFieldFromDeviceId(project_name,device.id,"fw_version");
-        if(fw_version == payload)
+        if(fw_version != payload)
           await $.db_data.update(project_name,device.id,"fota_tries",1); // ! 0 is not working..
       }else if(topic.endsWith("app_version")){
         let app_version = await $.db.getFieldFromDeviceId(project_name,device.id,"app_version");
