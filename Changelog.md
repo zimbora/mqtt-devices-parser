@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.8
+	- removes port from link to update fw devices
+
 ## 1.0.7
 	- config/index: changes local IP
 	- src/db/firmware: changes query to get latest fw release

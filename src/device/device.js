@@ -110,7 +110,7 @@ var self = module.exports = {
           return;
 
         let mqtt_prefix = `${project_name}/${uid}`;
-        let link = `${$.config.web.protocol}${$.config.web.domain}:${$.config.web.port}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
+        let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
 
         if(new_firmware != null && semver.lt(fw_version, new_firmware.fw_version)) {
           console.log(`updating firmware of ${uid} to ${new_firmware.fw_version}`);
