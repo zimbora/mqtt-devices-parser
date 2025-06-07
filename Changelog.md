@@ -1,7 +1,9 @@
 # Changelog
 
 ## 1.0.8
+	- Adds method to delete logs older than 1 week
 	- removes port from link to update fw devices
+	- fixes fw_version comparison
 
 ## 1.0.7
 	- config/index: changes local IP
