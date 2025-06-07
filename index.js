@@ -41,6 +41,11 @@ var self = module.exports = {
       console.log("mqtt connecting..")
       mqtt_connect();
 
+      setInterval(async ()=>{
+        await $.device.deleteLogs();
+      },60*60*1000);
+      
+
       return resolve();
     })
   },

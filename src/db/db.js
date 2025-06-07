@@ -264,6 +264,59 @@ var self = module.exports = {
     });
   },
 
+  getTables : async()=>{
+
+    return new Promise((resolve,reject) => {
+
+      self.getConnection((err,conn)=>{
+        if(err) return reject(err);
+
+        let query = "SHOW TABLES;"
+
+        conn.query(query,function(err,rows){
+          self.close_db_connection(conn);
+          if(err) return reject(err)
+          else return resolve(rows);
+        });
+      });
+    });
+  },
+
+  deleteOldEntries : async(table,filter)=>{
+
+    return new Promise((resolve,reject) => {
+
+      self.getConnection((err,conn)=>{
+        if(err) return reject(err);
+
+        let query = "";
+        if(typeof filter === "object"){
+          let values = [];
+          query = `DELETE FROM ?? WHERE `;
+          values.push(table);
+          for (let key in filter){
+            if(key == "createdAt"){
+              query += "createdAt < ?";
+            }else if(key = "id")
+              query += "id < ?"
+            else 
+              return reject("key not supported");
+            values.push(filter[key]);
+          }
+          query = mysql.format(query,values);
+        }else{
+          return reject("filter passed is not an object");
+        }
+
+        conn.query(query,function(err,rows){
+          self.close_db_connection(conn);
+          if(err) return reject(err)
+          else return resolve(rows);
+        });
+      });
+    });
+  },
+
   getFieldFromDeviceId : async (table,deviceId,field)=>{
 
     return new Promise((resolve,reject) => {

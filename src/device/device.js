@@ -1,3 +1,4 @@
+const moment = require('moment');
 
 var project = [];
 const logs_table = "sensor_logs";
@@ -28,6 +29,25 @@ var self = module.exports = {
       })
     });
 
+
+  },
+
+  deleteLogs : async()=>{
+
+    let tables = await $.db.getTables();
+    // Define one week in milliseconds
+    // Loop through each table
+    for (const tableObj of tables) {
+      const tableName = tableObj['Tables_in_mqtt-aedes']
+      const oneWeekAgo = moment().utc().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
+      if(tableName.startsWith("logs_")){
+        const uptimeSeconds = Math.floor(process.uptime());
+        console.log(`deleting logs of table ${tableName} older than ${oneWeekAgo}"`);
+        await $.db.deleteOldEntries(tableName, { createdAt: oneWeekAgo });
+        time = Math.floor(process.uptime()) - uptimeSeconds;
+        console.log(`Logs of table ${tableName} deleted in ${time}s`);
+      }
+    }
 
   },
 
@@ -141,3 +161,6 @@ var self = module.exports = {
   },
 
 }
+
+
+

@@ -193,5 +193,55 @@ var self = module.exports = {
 
 	    return resolve();
 	  });
+	},
+
+	deleteLogs : async (table, deviceId, topic, payload)=>{
+
+	  return new Promise((resolve,reject) => {
+
+		let db_columns = $.models.get(table);
+		if(db_columns == null)
+			return resolve();
+
+		$.db.delete(table,{id:0})
+		let index = topic.indexOf("/");
+
+		if(index > -1){ // check if topic has subtopics
+			let key = topic.substring(0,index);
+			topic = topic.substring(index+1);
+
+			if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
+			  // create JSON struct with the remaining topic
+			  // key is the column
+
+			  // build object with the remaining topic and respective data
+			  if(typeof data === "object")
+			    obj[key] = JSON.stringify(parser.pathIntoObject(topic,JSON.stringify(data)))
+			  else
+			    obj[key] = JSON.stringify(parser.pathIntoObject(topic,data));
+
+			  obj['device_id'] = deviceId;
+			  obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+			  $.db.insert(table,obj)
+
+			}
+		}else{
+
+			let key = topic;
+			if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
+			  // build object with respective data
+			  if(typeof data === "object")
+			    obj[key] = JSON.stringify(data);
+			  else
+			    obj[key] = data;
+
+			  obj['device_id'] = deviceId;
+			  obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+			  $.db.insert(table,obj);
+			}
+		}
+
+	    return resolve();
+	  });
 	}
 };
