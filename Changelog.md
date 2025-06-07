@@ -1,7 +1,9 @@
 # Changelog
 
-## 1.0.8
+## 1.0.9
 	- Adds method to delete logs older than 1 week
+
+## 1.0.8
 	- removes port from link to update fw devices
 	- fixes fw_version comparison
 
