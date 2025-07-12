@@ -130,15 +130,17 @@ var self = module.exports = {
           return;
 
         let mqtt_prefix = `${project_name}/${uid}`;
-        let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
 
-        if(new_firmware != null && semver.lt(fw_version, new_firmware.fw_version)) {
-          console.log(`updating firmware of ${uid} to ${new_firmware.fw_version}`);
+        if(new_app != null && semver.lt(app_version, new_app.app_version)) {
+          console.log(new_app)
+          console.log(`updating firmware of ${uid} to minor version ${new_app.app_version}`);
+          let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_app.filename}/download?token=${new_app.token}`;
           client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
           await $.db_data.update(project_name,device.id,"fota_tries",++fota_tries);
         }else{
-          if(new_app != null && semver.lt(app_version, new_app.app_version)) {
-            console.log(`updating firmware of ${uid} to ${new_app.app_version}`);
+          if(new_firmware != null && semver.lt(fw_version, new_firmware.fw_version)) {
+            console.log(`updating firmware of ${uid} to major version ${new_firmware.fw_version}`);
+            let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
             client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
             await $.db_data.update(project_name,device.id,"fota_tries",++fota_tries);
           }
@@ -150,6 +152,55 @@ var self = module.exports = {
         let res = await $.db_sensor.getByRef(topic)
         if(res != null){
           await $.db_sensor.insert(logs_table,device.id,res.id,payload);
+        }
+      }
+
+      // store remote device settings on project table - twin model
+      if(topic.endsWith("/set") && payload != "" ){
+
+        let route = topic.split("/");
+
+        if(route == null){
+          console.log("topic invalid:",topic);
+          return;
+        }
+        // get settings
+        let settings = await $.db_project.getSettings(project_name,device.id);
+        let obj = settings;
+
+        if(obj == null){
+          console.log("no settings available for deviceId:",device.id)
+          obj = {};
+        }
+        // Traverse through all route parts except the last one
+        route.slice(0, -1).forEach(property => {
+          if (!obj.hasOwnProperty(property) || 
+            ( obj.hasOwnProperty(property) && typeof obj[property] !== 'object')) 
+          {
+            obj[property] = {}; // create nested object if missing or not an object
+          }
+          obj = obj[property]; // go deeper
+        })
+        
+        let data = {};
+        try{
+          data = JSON.parse(payload)
+        }catch(error){}
+        
+        if (true || (data && typeof payload === 'object' && !Array.isArray(payload) ) ) {
+          // Assuming payload is an object with properties to process
+          for (const [key, value] of Object.entries(data)) {
+            obj[key] = value; // go deeper
+          };
+        }else{
+          obj = payload
+        }
+
+        // update on device fw settings
+        try{
+          await $.db_project.updateSettings(project_name,JSON.stringify(settings),device.id);
+        }catch(error){
+          console.log(error);
         }
       }
 
