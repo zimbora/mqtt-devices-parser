@@ -20,8 +20,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
-	      return resolve(null);
+	      return reject(err);
 	    });
 	  });
 	},
@@ -42,8 +41,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
-	      return resolve(null);
+	      return reject(err);
 	    });
 	  });
 	},
@@ -61,8 +59,7 @@ var self = module.exports = {
 		  return resolve(rows);
 	    })
 	    .catch( err => {
-	      console.log(err);
-	      return resolve(null);
+	      return reject(null);
 	    });
 	  });
 	},
@@ -88,4 +85,49 @@ var self = module.exports = {
 		});
   	},
 
+  	getSettings : async(project,deviceId)=>{
+
+  		return new Promise((resolve,reject) => {
+
+		    let query = "SELECT settings FROM ?? where device_id = ?";
+		    let table = [project, deviceId];
+		    query = mysql.format(query,table);
+
+		    $.db.queryRow(query)
+		    .then( rows => {
+		    	if(rows?.length > 0)
+			  		return resolve(rows[0].settings);
+			  	else
+			  		return resolve(null);
+		    })
+		    .catch( err => {
+		      return reject(err);
+		    });
+		});
+  	},
+
+  	updateSettings : async(project, settings, deviceId)=>{
+
+		return new Promise((resolve,reject) => {
+			let obj = {
+				settings : settings,
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				device_id : deviceId
+			};
+
+			resolve(null)
+			
+		    $.db.update(project,obj,filter)
+		    .then (rows => {
+		      return resolve(rows[0]);
+		    })
+		    .catch(error => {
+		      return reject(error);
+		    });
+		    
+		});
+  	},
 }
