@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.10
+	src/db/data: handles json data
+	- Adds updateJson call
+	- Adds addJsonLog
+	src/db/project: deals with settings
+	src/device/device: fixes fota fw link, stores settings on project table (twin model)
+	
 ## 1.0.9
 	- Adds method to delete logs older than 1 week
 
