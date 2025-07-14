@@ -9,10 +9,6 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		project: { // deprecated
-			type: DataTypes.STRING,
-			allowNull: true
-		},
 		status: {
 			type: DataTypes.STRING,
 			allowNull: true
@@ -30,6 +26,22 @@ module.exports = (sequelize,DataTypes)=>{
 				model: 'models',
 				key: 'id'
 			}
+		},
+		version: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
+		app_version: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
+		release: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
+		fota_tries: {
+			type: DataTypes.STRING,
+			allowNull: true
 		},
 		tech: {
 			type: DataTypes.STRING,
