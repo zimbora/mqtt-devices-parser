@@ -51,6 +51,64 @@ var self = module.exports = {
 
   },
 
+  checkFota : async ()=>{
+
+    const devices = await $.db_device.listOnline();
+
+    const batchSize = 10;
+    for (let i = 0; i < devices.length; i += batchSize) {
+      const batch = devices.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (device) => {
+
+        if (device.release == null || device.release === "critical") 
+        {
+          // don't update
+          return;
+        }
+
+        if (device.fota_tries > 3) 
+        {
+          return;
+        }
+
+        let new_firmware = await $.db_firmware.getLatestFWVersion(device.model_id,device.release);
+        let new_app = await $.db_firmware.getLatestAppVersion(device.model_id,device.release);
+        if(new_firmware == null || new_app == null)
+          return;
+
+        let project_name = "";
+        let res = await $.db_project.getById(device.project_id);
+        if(res != null)
+          project_name = res.name;
+        else
+          return;
+
+        let mqtt_prefix = `${project_name}/${device.uid}`;
+        if(new_app != null && semver.lt(device.app_version, new_app.app_version)) 
+        {
+            console.log(`updating firmware of ${device.uid} to minor version ${new_app.app_version}`);
+            let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_app.filename}/download?token=${new_app.token}`;
+            client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
+            await $.db_data.update(project_name,device.id,"fota_tries",++device.fota_tries);
+        }else{
+          if(new_firmware != null && semver.lt(device.version, new_firmware.fw_version)) 
+          {
+            console.log(`updating firmware of ${device.uid} to major version ${new_firmware.fw_version}`);
+            let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
+            $.mqtt_client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
+            await $.db_data.update(project_name,device.id,"fota_tries",++device.fota_tries);
+          }
+        }
+      }));
+
+      // Wait for 1 minute after processing each batch
+      if (i + batchSize < devices.length) {
+        await new Promise(resolve => setTimeout(resolve, 60000));
+      }
+    }
+
+  },
+
   parseMessage : async (client,topic,payload,retain)=>{
 
     let topic_bck = topic;
@@ -87,65 +145,31 @@ var self = module.exports = {
       let res = await $.db_project.getByName(project_name);
       let project_id = res?.id;
       if(project_id != null && project_id != device?.project_id) 
-        $.db_device.updateProject(uid,project_id);
+        $.db_device.update(device.id,"project_id",project_id);
 
-      if(topic.endsWith("status")){
+      if(topic === "status"){
         if(payload == "online" || payload == "offline")
-          await $.db_device.updateStatus(uid,payload);
-        console.log(project_name,uid,payload)
-      }else if(topic.endsWith("model")){
+          await $.db_device.update(device.id,"status",payload);
+      }else if(topic === "model"){
         let res = await $.db_model.getByName(payload);
         let model_id = res?.id;
 
         if(model_id != null){
-          let res = await $.db_device.updateModel(uid,model_id);
+          let res = await $.db_device.update(device.id,"model_id",model_id);
         } 
-      }else if(topic.endsWith("tech")){
-        await $.db_device.updateTech(uid,payload);
-      }else if(topic.endsWith("fw_version")){
-        let fw_version = await $.db.getFieldFromDeviceId(project_name,device.id,"fw_version");
-        if(fw_version != payload)
-          await $.db_data.update(project_name,device.id,"fota_tries",1); // ! 0 is not working..
-      }else if(topic.endsWith("app_version")){
-        let app_version = await $.db.getFieldFromDeviceId(project_name,device.id,"app_version");
-        if(app_version != payload)
-          await $.db_data.update(project_name,device.id,"fota_tries",1); // ! 0 is not working..
-      }else if(topic.endsWith("uptime")){ // !! maybe this topic should be change for something ending in fota
-        // check fw version
-        // get current fw and app version
-        let release = await $.db.getFieldFromDeviceId(project_name,device.id,"fw_release");
-        if(release == null || release == "critical"){
-          // don't update
-          return;
+      }else if(topic === "tech"){
+        await $.db_device.update(device.id,"tech",payload);
+      }else if(topic === "version"){
+        // Update version and app_version on device table..
+        if(payload != device.version){
+          await $.db_device.update(device.id,"version",payload);
+          await $.db_device.update(device.id,"fota_tries",1); // ! value 0 doesn't work..
         }
-        let fota_tries = await $.db.getFieldFromDeviceId(project_name,device.id,"fota_tries");
-        if(fota_tries > 3)
-          return;
-
-        let fw_version = await $.db.getFieldFromDeviceId(project_name,device.id,"fw_version");
-        let app_version = await $.db.getFieldFromDeviceId(project_name,device.id,"app_version");
-        let new_firmware = await $.db_firmware.getLatestFWVersion(device.model_id,release);
-        let new_app = await $.db_firmware.getLatestAppVersion(device.model_id,release);
-        if(new_firmware == null || new_app == null)
-          return;
-
-        let mqtt_prefix = `${project_name}/${uid}`;
-
-        if(new_app != null && semver.lt(app_version, new_app.app_version)) {
-          console.log(new_app)
-          console.log(`updating firmware of ${uid} to minor version ${new_app.app_version}`);
-          let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_app.filename}/download?token=${new_app.token}`;
-          client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
-          await $.db_data.update(project_name,device.id,"fota_tries",++fota_tries);
-        }else{
-          if(new_firmware != null && semver.lt(fw_version, new_firmware.fw_version)) {
-            console.log(`updating firmware of ${uid} to major version ${new_firmware.fw_version}`);
-            let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${new_firmware.filename}/download?token=${new_firmware.token}`;
-            client.publish(mqtt_prefix+"/fw/fota/update/set",`{"url":"${link}"}`,{qos:2,retain:false});
-            await $.db_data.update(project_name,device.id,"fota_tries",++fota_tries);
-          }
+      }else if(topic === "app_version"){
+        if(payload != device.app_version){
+          await $.db_device.update(device.id,"app_version",payload);
+          await $.db_device.update(device.id,"fota_tries",1); // ! value 0 doesn't work..
         }
-        
       }
 
       if(device.project_id != null && device.model_id != null){
