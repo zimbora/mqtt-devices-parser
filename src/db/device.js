@@ -7,20 +7,62 @@ var self = module.exports = {
 		return new Promise((resolve,reject) => {
 
 			let query = "SELECT id,uid,project_id,model_id,status FROM ?? where uid = ?";
-		    let table = ["devices",uid];
-		    query = mysql.format(query,table);
+			let table = ["devices",uid];
+			query = mysql.format(query,table);
 
-		    $.db.queryRow(query)
-		    .then( rows => {
-		      if(rows.length > 0)
-		        return resolve(rows[0]);
-		      else
-		        return resolve(null);
-		    })
-		    .catch( err => {
-		      console.log(err);
-		      return resolve(null);
-		    });
+			$.db.queryRow(query)
+			.then( rows => {
+				if(rows.length > 0)
+					return resolve(rows[0]);
+				else
+					return resolve(null);
+			})
+			.catch( err => {
+				console.log(err);
+				return resolve(null);
+			});
+		});
+	},
+
+	listOnline : async ()=>{
+		return new Promise((resolve,reject) => {
+
+			let query = "SELECT * FROM ?? where status = ?";
+			let table = ["devices","online"];
+			query = mysql.format(query,table);
+
+			$.db.queryRow(query)
+			.then( rows => {
+				if(rows.length > 0)
+					return resolve(rows);
+				else
+					return resolve(null);
+			})
+			.catch( err => {
+				console.log(err);
+				return resolve(null);
+			});
+		});
+	},
+
+	getField : async (id,column)=>{
+		return new Promise((resolve,reject) => {
+
+			let query = "SELECT ?? FROM devices where id = ?";
+			let table = [column,id];
+			query = mysql.format(query,table);
+
+			$.db.queryRow(query)
+			.then( rows => {
+				if(rows.length > 0)
+					return resolve(rows[0]);
+				else
+					return resolve(null);
+			})
+			.catch( err => {
+				console.log(err);
+				return resolve(null);
+			});
 		});
 	},
 
@@ -33,101 +75,37 @@ var self = module.exports = {
 				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
 
-		    $.db.insert("devices",obj)
-		    .then (rows => {
-		      return resolve(rows[0]);
-		    })
-		    .catch(error => {
-		      return reject(error);
-		    });
+			$.db.insert("devices",obj)
+			.then (rows => {
+				return resolve(rows[0]);
+			})
+			.catch(error => {
+				return reject(error);
+			});
 		});
-  	},
+	},
 
-  	updateStatus : async(uid,status)=>{
+	update : async(id,column,value)=>{
 		return new Promise((resolve,reject) => {
 
-		    let obj = {
-		      status : status,
-		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-		    };
+			let obj = {
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			};
 
-		    let filter = {
-		      uid : uid,
-		    };
+			obj[column] = value;
 
-		    $.db.update("devices",obj,filter)
-		    .then (rows => {
-		      return resolve(rows);
-		    })
-		    .catch(error => {
-		      return reject(error);
+			let filter = {
+				id : id,
+			};
+
+			$.db.update("devices",obj,filter)
+			.then (rows => {
+				return resolve(rows);
+			})
+			.catch(error => {
+				return reject(error);
 			});
-	  });
-  	},
+		});
+	},
 
-  	updateTech : async(uid,tech)=>{
-		return new Promise((resolve,reject) => {
-
-		    let obj = {
-		      tech : tech,
-		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-		    };
-
-		    let filter = {
-		      uid : uid,
-		    };
-
-		    $.db.update("devices",obj,filter)
-		    .then (rows => {
-		      return resolve(rows);
-		    })
-		    .catch(error => {
-		      return reject(error);
-			});
-	  });
-  	},
-
-  	updateProject : async(uid,project_id)=>{
-		return new Promise((resolve,reject) => {
-
-		    let obj = {
-		      project_id : project_id,
-		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-		    };
-
-		    let filter = {
-		      uid : uid,
-		    };
-
-		    $.db.update("devices",obj,filter)
-		    .then (rows => {
-		      return resolve(rows);
-		    })
-		    .catch(error => {
-		      return reject(error);
-			});
-	  });
-  	},
-
-  	updateModel : async(uid,model_id)=>{
-		return new Promise((resolve,reject) => {
-
-		    let obj = {
-		      model_id : model_id,
-		      updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-		    };
-
-		    let filter = {
-		      uid : uid,
-		    };
-
-		    $.db.update("devices",obj,filter)
-		    .then (rows => {
-		      return resolve(rows);
-		    })
-		    .catch(error => {
-		      return reject(error);
-			});
-	  });
-  	},
 }
