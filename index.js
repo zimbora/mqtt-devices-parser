@@ -14,6 +14,7 @@ $.db_device = require('./src/db/device');
 $.db_model = require('./src/db/model');
 $.db_firmware = require('./src/db/firmware');
 $.db_sensor = require('./src/db/sensor');
+$.mqtt_client = null;
 
 const packageJson = require(__dirname+'/package.json');
 const packageVersion = packageJson.version;
@@ -44,7 +45,6 @@ var self = module.exports = {
       setInterval(async ()=>{
         await $.device.deleteLogs();
       },60*60*1000);
-      
 
       return resolve();
     })
@@ -117,7 +117,8 @@ var self = module.exports = {
 function mqtt_connect(){
 
   const mqtt_prefix = $.config.mqtt.logs_path+"/"+$.config.mqtt.client;
-  const client = mqtt.connect({
+  let checkFota = null;
+  $.mqtt_client = mqtt.connect({
     host : $.config.mqtt.host,
     port : $.config.mqtt.port,
     username : $.config.mqtt.user,
@@ -132,50 +133,58 @@ function mqtt_connect(){
     }
   });
 
-  client.on("connect", () => {
+  $.mqtt_client.on("connect", () => {
 
-    client.publish(mqtt_prefix+"/status","online",{qos:2,retain:true});
-    client.publish(mqtt_prefix+"/version",packageVersion,{qos:2,retain:true});
+    $.mqtt_client.publish(mqtt_prefix+"/status","online",{qos:2,retain:true});
+    $.mqtt_client.publish(mqtt_prefix+"/version",packageVersion,{qos:2,retain:true});
 
     projects.map( (project)=>{
-      client.subscribe(project+"/#", (err) => {});
+      $.mqtt_client.subscribe(project+"/#", (err) => {});
 
       for(let project in $.config.projects){
         if($.config.projects[project])
-          client.publish(mqtt_prefix+"/"+project,"active",{qos:2,retain:true});
+          $.mqtt_client.publish(mqtt_prefix+"/"+project,"active",{qos:2,retain:true});
         else
-          client.publish(mqtt_prefix+"/"+project,"deactive",{qos:2,retain:true});
+          $.mqtt_client.publish(mqtt_prefix+"/"+project,"deactive",{qos:2,retain:true});
       };
     })
     console.log(`MQTT connected to: ${$.config.mqtt.host}:${$.config.mqtt.port}`);
     projects.map( project=>{
       console.log("subscribing project:",project);
-      client.subscribe(project+"/#")
+      $.mqtt_client.subscribe(project+"/#")
     })
+
+    checkFota = setInterval(async ()=>{
+      await $.device.checkFota();
+    },60*1000);
+
   });
 
-  client.on("message", (topic, payload, packet) => {
+  $.mqtt_client.on("message", (topic, payload, packet) => {
     // payload is Buffer
-    $.device.parseMessage(client,topic.toString(),payload.toString(),packet.retain);
+    $.device.parseMessage($.mqtt_client,topic.toString(),payload.toString(),packet.retain);
   });
 
-  client.on("reconnect",()=>{
+  $.mqtt_client.on("reconnect",()=>{
     console.log("reconnect")
   });
 
-  client.on("close",()=>{
+  $.mqtt_client.on("close",()=>{
     console.log("close")
+    checkFota = null;
   });
 
-  client.on("offline",()=>{
+  $.mqtt_client.on("offline",()=>{
     console.log("offline")
+    checkFota = null;
   });
 
-  client.on("disconnect",(packet)=>{
+  $.mqtt_client.on("disconnect",(packet)=>{
     console.log(packet)
+    checkFota = null;
   })
 
-  client.on("error",(error)=>{
+  $.mqtt_client.on("error",(error)=>{
     console.log(error)
   })
 }
