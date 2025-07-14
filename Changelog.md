@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.11
+	index: MQTT
+		- makes mqtt client global,
+		- adds periodically call for FOTA update
+	models/devices.models: adds version fields to devices table
+	models/firmwares.models: adds new fields for firmware management
+	src/db/device: optimizes calls to manage devices table
+	src/device/device: Fota changes, db calls updated to match previous changes
+	Adds method to check FOTA updates. Doing 10 at time at each minute for now. Non configurable
+
 ## 1.0.10
 	src/db/data: handles json data
 	- Adds updateJson call
