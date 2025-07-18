@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.12
+	Adds periodically call to check and update devices
+
 ## 1.0.11
 	index: MQTT
 		- makes mqtt client global,

@@ -10,14 +10,49 @@ Only messages with MACRO_UID_PREFIX in topic will be parsed.
 MACRO_UID_PREFIX allows the module to discover the device uid.
 If uid doesn't exist in db it will add it.
 After that, it will associate the project if the project exists in db.
-If the device already exists it will verify the project and update it in case of need
+If the device already exists it will verify the project and update it in case of needed
 
-:project/:device/status
-Updates the device status
+## Fota
+Add a new firmware to model
 
-:project/:device/model
+Every 5min for release = "dev" and every hour for release = "prod"
+devices will be updated if needed
+
+### Available topics
+
+:project/:device/status - send it on boot with retain
+Updates the device status (online/offline)
+
+:project/:device/model - send it on boot with retain
 Updates the model if the model already exists in db
 
+:project/:device/version - send it on boot with retain
+// If version mismatch, updates fota table with success
+
+:project/:device/app_version - send it on boot with retain
+// If version mismatch, updates fota table with success
+
+:project/:device/tech - send it on boot with retain
+// Radio technology
+
+:project/:device/fw/fota/update/status - send if fota fails
+// Receives fota error and updates fota table
+
+// can be changed - Likely will be deprecated
+:project/:device/fw - send it periodically
+// JSON struct, stores value of keys:
+	- heapFree
+	- uptime
+	- rssi
+
+// Under development
+// If sensor is created stores info
+:project/:device/sensor/:sensor 
+// JSON struct, stores value of keys:
+	- value
+
+### Set instruction
+Any instruction ended with /set will be added to a json file on settings table
 
 ## New Project
 
