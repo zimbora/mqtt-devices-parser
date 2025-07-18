@@ -14,6 +14,7 @@ $.db_device = require('./src/db/device');
 $.db_model = require('./src/db/model');
 $.db_firmware = require('./src/db/firmware');
 $.db_sensor = require('./src/db/sensor');
+$.db_fota = require('./src/db/fota');
 $.mqtt_client = null;
 
 const packageJson = require(__dirname+'/package.json');
@@ -63,6 +64,7 @@ var self = module.exports = {
       })
 
       let counter_help = 0;
+      let project = {}
       files.forEach( async(name,counter) => {
         if($.config.projects[name]){
           project[name] = {};
@@ -82,7 +84,7 @@ var self = module.exports = {
 
   },
 
-  deploy: async(_config,projectsPath)=>{
+  deploy: async(_config,projectsPath, projects)=>{
 
     if(_config != null)
         $.config = _config;
@@ -104,6 +106,15 @@ var self = module.exports = {
       await $.models.insertUser("client","client_pwd",3);
       // adds client with credentials admin@admin
       await $.models.insertClient("admin","admin",user_id); // dashboard login
+
+      for(name of projects){
+        project = $.config[name];
+        if (project) {
+          // Make a copy if you don't want to modify the original config object
+          const projectData = { ...project, name: name };
+          await $.models.insertProject(projectData);
+        }
+      }
     }
 
     // project tables
@@ -154,9 +165,19 @@ function mqtt_connect(){
       $.mqtt_client.subscribe(project+"/#")
     })
 
+    // Update 'dev' devices at each 5 min 
     checkFota = setInterval(async ()=>{
-      await $.device.checkFota();
-    },60*1000);
+      await $.device.checkFota("dev");
+      await $.device.triggerFota("dev");
+    },5*60*1000);
+
+    // Update 'prod' devices at each hour
+    checkFota = setInterval(async ()=>{
+      await $.device.checkFota("prod");
+      await $.device.triggerFota("prod");
+    },60*60*1000);
+
+    // Devices not set as dev or prod must be triggered manually
 
   });
 

@@ -35,11 +35,7 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		release: {
-			type: DataTypes.STRING,
-			allowNull: true
-		},
-		fota_tries: {
+		accept_release: {
 			type: DataTypes.STRING,
 			allowNull: true
 		},

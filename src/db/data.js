@@ -1,6 +1,8 @@
 const moment = require('moment');
 var mysql = require('mysql2')
 
+// Use this call only for dbs outside this module, they need to be registered on sequelize
+
 var self = module.exports = {
 
 	checkEntry : async (table,deviceId)=>{
@@ -19,8 +21,7 @@ var self = module.exports = {
 				return resolve(null);
 		})
 		.catch( err => {
-			console.log(err);
-			return resolve(null);
+			return reject(err);
 			});
 		});
 	},
@@ -73,8 +74,7 @@ var self = module.exports = {
 							return resolve(rows);
 						})
 						.catch((err)=>{
-							console.log(err);
-							return resolve();
+							return reject(err);
 						})
 					}else{
 						let filter = {
@@ -85,12 +85,14 @@ var self = module.exports = {
 							return resolve(rows);
 						})
 						.catch((err)=>{
-							console.log(err);
-							return resolve();
+							return reject(err);
 						})
 					}
 
-				}else return resolve();
+				}else{
+					return resolve();
+					//return reject(`columns not found for table ${table}`);	
+				} 
 			}else{
 
 				let key = topic;
@@ -110,8 +112,7 @@ var self = module.exports = {
 							return resolve(rows);
 						})
 						.catch((err)=>{
-							console.log(err);
-							return resolve(null);
+							return reject(err);
 						})
 					}else{
 						let filter = {
@@ -123,11 +124,13 @@ var self = module.exports = {
 							return resolve(rows);
 						})
 						.catch((err)=>{
-							console.log(err);
-							return resolve(null);
+							return reject(err);
 						})
 					}
-				}else return resolve();
+				}else{
+					return resolve();
+					//return reject(`columns not found for table ${table}`);	
+				}
 			}
 		})
 	},
@@ -137,7 +140,7 @@ var self = module.exports = {
 		return new Promise( async (resolve, reject) => {
 		
 			if (!payload || typeof payload !== 'object') 
-				return resolve();
+				return reject("Not object");
 
 			let obj = {
 				updatedAt: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
@@ -146,8 +149,10 @@ var self = module.exports = {
 
 			// Get columns info
 			const db_columns = $.models.get(table);
-			if (db_columns == null) 
-				return resolve();
+			if (db_columns == null){
+				resolve();
+				//return reject(`columns not found for table ${table}`);
+			} 
 
 			// Prepare data for insertion
 			for (let key in payload) {
@@ -171,8 +176,7 @@ var self = module.exports = {
 					return resolve(rows);
 				})
 				.catch((err)=>{
-					console.log(err);
-					return resolve();
+					return reject(err);
 				})
 			}else{
 				let filter = {
@@ -183,12 +187,9 @@ var self = module.exports = {
 					return resolve(rows);
 				})
 				.catch((err)=>{
-					console.log(err);
-					return resolve();
+					return reject(err);
 				})
 			}
-
-			return resolve();
 		});
 	},
 
@@ -198,74 +199,78 @@ var self = module.exports = {
 
 	    if(!payload) return resolve();
 
-			let data = null;
-			// check if data is in JSON format
-			try{
-				data = JSON.parse(payload);
-			}catch(e){
-				data = payload;
-			}
+		let data = null;
+		// check if data is in JSON format
+		try{
+			data = JSON.parse(payload);
+		}catch(e){
+			data = payload;
+		}
 
-			let obj = {
-				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
-			}
+		let obj = {
+			updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+		}
 
-			let db_columns = $.models.get(table);
-			if(db_columns == null)
-				return resolve();
+		let db_columns = $.models.get(table);
+		if(db_columns == null){
+			resolve();
+			//return reject(`columns not found for table ${table}`);
+		}
 
-			let index = topic.indexOf("/");
+		let index = topic.indexOf("/");
 
-			if(index > -1){ // check if topic has subtopics
-				let key = topic.substring(0,index);
-				topic = topic.substring(index+1);
+		if(index > -1){ // check if topic has subtopics
+			let key = topic.substring(0,index);
+			topic = topic.substring(index+1);
 
-				if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
-					// create JSON struct with the remaining topic
-					// key is the column
+			if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
+				// create JSON struct with the remaining topic
+				// key is the column
 
-					// build object with the remaining topic and respective data
-					if(typeof data === "object")
-						obj[key] = JSON.stringify(parser.pathIntoObject(topic,JSON.stringify(data)))
-					else
-						obj[key] = JSON.stringify(parser.pathIntoObject(topic,data));
+				// build object with the remaining topic and respective data
+				if(typeof data === "object")
+					obj[key] = JSON.stringify(parser.pathIntoObject(topic,JSON.stringify(data)))
+				else
+					obj[key] = JSON.stringify(parser.pathIntoObject(topic,data));
 
-					obj['device_id'] = deviceId;
-					obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
-					$.db.insert(table,obj)
-					.then((rows)=>{
-						return resolve(rows);
-					})
-					.catch((err)=>{
-						console.log(err);
-						return resolve();
-					})
+				obj['device_id'] = deviceId;
+				obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+				$.db.insert(table,obj)
+				.then((rows)=>{
+					return resolve(rows);
+				})
+				.catch((err)=>{
+					return reject(err);
+				})
 
-				}else
-					return resolve();
 			}else{
-
-				let key = topic;
-				if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
-					// build object with respective data
-					if(typeof data === "object")
-						obj[key] = JSON.stringify(data);
-					else
-						obj[key] = data;
-
-					obj['device_id'] = deviceId;
-					obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
-					$.db.insert(table,obj)
-					.then((rows)=>{
-						return resolve(rows);
-					})
-					.catch((err)=>{
-						console.log(err);
-						return resolve();
-					})
-				}else
-					return resolve();
+				resolve();
+				//return reject(`column ${key} not found for table ${table}`);
 			}
+		}else{
+
+			let key = topic;
+			if(db_columns.hasOwnProperty(key)){ // check if db has a column for this key
+				// build object with respective data
+				if(typeof data === "object")
+					obj[key] = JSON.stringify(data);
+				else
+					obj[key] = data;
+
+				obj['device_id'] = deviceId;
+				obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+				$.db.insert(table,obj)
+				.then((rows)=>{
+					return resolve(rows);
+				})
+				.catch((err)=>{
+					return reject(err);
+				})
+			}else{
+				resolve();
+				//return reject(`column ${key} not found for table ${table}`);
+			}
+		}
 
 	  });
 	},
@@ -300,14 +305,12 @@ var self = module.exports = {
 				}
 			}
 
-			//console.log("updateJSONlog")
 			$.db.insert(table, obj)
 			.then((rows)=>{
 				return resolve(rows);
 			})
 			.catch((err)=>{
-				console.log(err);
-				return resolve();
+				return reject(err);
 			})
 		});
 	},
@@ -317,8 +320,10 @@ var self = module.exports = {
 	  return new Promise((resolve,reject) => {
 
 		let db_columns = $.models.get(table);
-		if(db_columns == null)
-			return resolve();
+		if(db_columns == null){
+			resolve();
+			//return reject(`columns not found for table ${table}`);
+		}
 
 		$.db.delete(table,{id:0})
 		let index = topic.indexOf("/");
@@ -344,8 +349,7 @@ var self = module.exports = {
 				return resolve(rows);
 			  })
 			.catch((err)=>{
-				console.log(err);
-				return resolve();
+				return reject(err);
 			})
 			}
 		}else{

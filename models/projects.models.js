@@ -16,6 +16,14 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		uidPrefix : {
+			type: DataTypes.STRING,
+			allowNull: false	
+		},
+		uidLength : {
+			type: DataTypes.INTEGER,
+			allowNull: false	
+		}
 	},
 	{
 		tableName: 'projects',

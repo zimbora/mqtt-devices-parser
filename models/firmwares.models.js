@@ -10,10 +10,6 @@ module.exports = (sequelize,DataTypes)=>{
 			allowNull: true,
 			unique: true
 		},
-		fw_version: { // deprecated
-			type: DataTypes.STRING,
-			allowNull: true
-		},
 		version: {
 			type: DataTypes.STRING,
 			allowNull: true
@@ -22,15 +18,11 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		fw_release: { // deprecated
+		build_release: {
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		release: {
-			type: DataTypes.STRING,
-			allowNull: true
-		},
-		model_id: { // deprecated
+		model_id: { 
 			type: DataTypes.INTEGER,
 			references: {
 				model: 'models',

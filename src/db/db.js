@@ -144,6 +144,7 @@ var self = module.exports = {
     });
   },
 
+  // update column with json data
   updateJSON : async (table, column, data, filter) => {
 
     return new Promise((resolve, reject) => {
@@ -312,6 +313,29 @@ var self = module.exports = {
           self.close_db_connection(conn);
           if(err) return reject(err)
           else return resolve(rows);
+        });
+      });
+    });
+  },
+
+  getDataFromDeviceId : async (table,deviceId)=>{
+
+    return new Promise((resolve,reject) => {
+
+      self.getConnection((err,conn)=>{
+        if(err) return reject(err);
+
+        let query = "SELECT ?? FROM ?? where device_id = ?";
+        let args = [field,table,deviceId];
+        query = mysql.format(query,args);
+        conn.query(query,function(err,rows){
+          $.db.close_db_connection(conn);
+          if(err) return reject(err)
+          else{
+            if(rows.length == 1 ){
+              return resolve(rows[0]);
+            }else return resolve(null);
+          }
         });
       });
     });
