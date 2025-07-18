@@ -26,6 +26,27 @@ var self = module.exports = {
 		});
 	},
 
+	getGwAssociatedToDevice : async (table,uid)=>{
+
+		return new Promise((resolve,reject) => {
+
+		let query = "SELECT * FROM ?? where uid = ?";
+		let args = [table,uid];
+		query = mysql.format(query,args);
+
+		$.db.queryRow(query)
+		.then( rows => {
+			if(rows.length > 0)
+				return resolve(rows[0]);
+			else
+				return resolve(null);
+		})
+		.catch( err => {
+			return reject(err);
+			});
+		});
+	},
+
 	update : async (table, deviceId, topic, payload)=>{
 
 		return new Promise( async (resolve,reject) => {
