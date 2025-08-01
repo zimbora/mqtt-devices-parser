@@ -194,4 +194,199 @@ var self = module.exports = {
 		});
 	},
 
+
+	addLog : async(id,column,value)=>{
+		return new Promise((resolve,reject) => {
+
+			const timestamp = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			let obj = {
+				createdAt : timestamp,
+				updatedAt : timestamp
+			};
+
+			obj['device_id'] = id;
+			obj[column] = value;
+
+			$.db.insert("logs_devices",obj)
+			.then (rows => {
+				return resolve(rows);
+			})
+			.catch(error => {
+				return reject(error);
+			});
+		});
+	},
+
+	addLogIfChanged : async(id,column,value)=>{
+		return new Promise(async (resolve,reject) => {
+
+			let query = "SELECT ?? FROM ?? where id = ? and ?? is NOT NULL ORDER BY updatedAt DESC LIMIT 1";
+			let table = [column,"logs_devices",id,column];
+			query = mysql.format(query,table);
+
+			try{
+				let rows = await $.db.queryRow(query)
+				
+				if(rows.length > 0){
+					let lastValue = rows[0]?.column
+					if(lastValue == value)
+						resolve();
+				}
+
+				const timestamp = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+				let obj = {
+					createdAt : timestamp,
+					updatedAt : timestamp
+				};
+
+				obj['device_id'] = id;
+				obj[column] = value;
+
+				await $.db.insert("logs_devices",obj)
+
+				resolve();
+
+			}catch (err) {
+				return reject(err);
+			};
+
+		});
+	},
+
+	getLocalSettings : async(deviceId)=>{
+
+  		return new Promise((resolve,reject) => {
+
+		    let query = "SELECT local_settings FROM ?? where id = ?";
+		    let table = ["devices", deviceId];
+		    query = mysql.format(query,table);
+
+		    $.db.queryRow(query)
+		    .then( rows => {
+		    	if(rows?.length > 0)
+			  		return resolve(rows[0]?.local_settings);
+			  	else
+			  		return resolve(null);
+		    })
+		    .catch( err => {
+		      return reject(err);
+		    });
+		});
+  	},
+
+  updateLocalSettings : async(settings, deviceId)=>{
+
+		return new Promise((resolve,reject) => {
+			let obj = {
+				local_settings : settings,
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id : deviceId
+			};
+
+			resolve(null)
+			
+	    $.db.update("devices",obj,filter)
+	    .then (rows => {
+	      return resolve(rows[0]);
+	    })
+	    .catch(error => {
+	      return reject(error);
+	    });
+		    
+		});
+	},
+
+  getRemoteSettings : async(deviceId)=>{
+
+		return new Promise((resolve,reject) => {
+
+	    let query = "SELECT remote_settings FROM ?? where id = ?";
+	    let table = ["devices", deviceId];
+	    query = mysql.format(query,table);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	    	if(rows?.length > 0)
+		  		return resolve(rows[0]?.remote_settings);
+		  	else
+		  		return resolve(null);
+	    })
+	    .catch( err => {
+	      return reject(err);
+	    });
+		});
+	},
+
+	updateRemoteSettings : async(settings, deviceId)=>{
+
+		return new Promise((resolve,reject) => {
+			let obj = {
+				remote_settings : settings,
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id : deviceId
+			};
+
+			resolve(null)
+			
+		    $.db.update("devices",obj,filter)
+		    .then (rows => {
+		      return resolve(rows[0]);
+		    })
+		    .catch(error => {
+		      return reject(error);
+		    });
+		    
+		});
+	},
+
+	getAssociatedDevice : async (deviceId)=>{
+
+		return new Promise((resolve,reject) => {
+
+			let query = "SELECT associatedDevice FROM ?? where id = ?";
+			let args = ["devices",deviceId];
+			query = mysql.format(query,args);
+
+			$.db.queryRow(query)
+			.then( rows => {
+				if(rows.length > 0)
+					return resolve(rows[0]?.associatedDevice);
+				else
+					return resolve(null);
+			})
+			.catch( err => {
+				return reject(err);
+			});
+
+		});
+	},
+
+	updateAssociatedDevice : async(deviceId,associatedDeviceId)=>{
+		return new Promise((resolve,reject) => {
+			let obj = {
+				associatedDevice : associatedDeviceId,
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id : deviceId
+			};
+			
+	    $.db.update("devices",obj,filter)
+	    .then (rows => {
+	      return resolve(rows[0]);
+	    })
+	    .catch(error => {
+	      return reject(error);
+	    });
+		    
+		});
+	}
+
 }
