@@ -26,27 +26,6 @@ var self = module.exports = {
 		});
 	},
 
-	getGwAssociatedToDevice : async (table,uid)=>{
-
-		return new Promise((resolve,reject) => {
-
-		let query = "SELECT * FROM ?? where uid = ?";
-		let args = [table,uid];
-		query = mysql.format(query,args);
-
-		$.db.queryRow(query)
-		.then( rows => {
-			if(rows.length > 0)
-				return resolve(rows[0]);
-			else
-				return resolve(null);
-		})
-		.catch( err => {
-			return reject(err);
-			});
-		});
-	},
-
 	update : async (table, deviceId, topic, payload)=>{
 
 		return new Promise( async (resolve,reject) => {
@@ -299,7 +278,7 @@ var self = module.exports = {
 	addJsonLog: async (table, deviceId, dataObject) => {
 		return new Promise((resolve, reject) => {
 			if (!dataObject || typeof dataObject !== 'object') 
-				return resolve();
+				return reject("Not an object");
 
 			let obj = {
 				updatedAt: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
@@ -310,7 +289,7 @@ var self = module.exports = {
 			// Get columns info
 			const db_columns = $.models.get(table);
 			if (db_columns == null) 
-				return resolve();
+				return reject(`No columns for table: ${table}`);
 
 			// Prepare data for insertion
 			for (let key in dataObject) {
