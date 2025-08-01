@@ -2,41 +2,11 @@
 
 ## 1.0.12
 	Adds module fota
-		- Checks fota every 5min for dev devices and 60min for prod devices
 	adds 2 new tables to db:
-		- logs_actions (not used yet)
-		- logs_device
 	Adds 5 new columns to devices
-		- remote_settings (settings stored on device side)
-		- local_settings (settings stored on server side)
-		- settings_ref - points to somewhere to use is settings ( a device or template)
-		- associatedDevice (associates a device to it)
-		- endpoint (to register protocol params)
 	Registers device logs, records device settings..
-		topics that matches :project/:uid/settings/../set will be recorded on column local_settings
-		topics that matches :project/:uid/settings/.. will be recorded on column remote_settings
-		topics that matches :project/:uid/:
-			- status
-			- model
-			- tech
-			- version
-			- app_version
-			will be recorded on logs_devices table if value change with exception to status that is always recorded.
-			If project mismatches, a new entry is also created.
-		A new special fota method was created for model "sniffer"
-		src/db/device: Supports new methods:
-			- addLog
-			- addLogIfChanged
-			- getLocalSettings
-			- updateLocalSettings
-			- getRemoteSettings
-			- updateRemoteSettings
-			- getAssociatedDevice
-			- updateAssociatedDevice
-		src/db/data: removes getGwAssociatedToDevice method
-		fixes: ws affected by a DoS when handling a request with many HTTP headers - 	https://github.com/advisories/GHSA-3h5v-q93c-6h6q
-			!breaking change
-		Updates npm
+	fixes: ws affected by a DoS when handling a request with many HTTP headers !breaking change
+	Updates npm
 	
 ## 1.0.11
 	index: MQTT
