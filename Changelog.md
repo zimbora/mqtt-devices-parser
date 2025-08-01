@@ -1,13 +1,15 @@
 # Changelog
 
-## 1.0.12
-	Adds module fota
+## 1.0.13
 	adds 2 new tables to db:
 	Adds 5 new columns to devices
 	Registers device logs, records device settings..
 	fixes: ws affected by a DoS when handling a request with many HTTP headers !breaking change
 	Updates npm
-	
+
+## 1.0.12
+	Adds module fota
+
 ## 1.0.11
 	index: MQTT
 		- makes mqtt client global,
