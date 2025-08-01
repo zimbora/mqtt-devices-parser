@@ -43,6 +43,27 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		remote_settings: { // device settings
+			type: DataTypes.JSON,
+			allowNull: true
+		},
+		local_settings: { // server settings
+			type: DataTypes.JSON,
+			allowNull: true
+		},
+		settings_ref: { // settings to be used, can be a uid, deviceId, default..
+			type: DataTypes.STRING,
+			allowNull: true
+		},
+		associatedDevice: {
+			type: DataTypes.INTEGER,
+			allowNull: true
+		},
+		endpoint: { // info about protocol communication
+			type: DataTypes.JSON,
+			allowNull: true
+		},
+
 	},
 	{
 		tableName: 'devices',
