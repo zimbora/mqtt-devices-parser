@@ -314,12 +314,15 @@ var self = module.exports = {
 
     for (const model of models) {
       
+      console.log("model:",model?.name);
       if(!model?.id)
         continue;
 
       try{
         const latestVersion = await $.db_firmware.getLatestVersion(model.id,release);
         const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release);
+        console.log("latestVersion:",latestVersion?.version);
+        console.log("latestAppVersion:",latestAppVersion?.app_version);
 
         const devices = await $.db_device.listByModel(model.id);
 
@@ -356,12 +359,21 @@ var self = module.exports = {
             };
           }
           if(obj != null){
-            try{
-              let res = await $.db_fota.getEntry(device.id,obj);
-              if(res == null)
-                $.db_fota.update(device.id,obj);
-            }catch(error){
-              console.error(error)
+            try {
+
+              let res = await $.db_fota.getEntry(device.id, obj);
+
+              if (res == null) {
+                try {
+                  console.log("add fota entry for device:", device.uid);
+                  await $.db_fota.update(device.id, obj);
+                } catch (err) {
+                  console.error("Error updating FOTA entry:", err);
+                }
+              }
+              
+            } catch (error) {
+              console.error("Error getting or processing FOTA entry:", error);
             }
           }
         }
@@ -409,7 +421,7 @@ var self = module.exports = {
             topic = mqtt_prefix+"/fw/fota/update/set";
           }
           let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${firmware?.filename}/download?token=${firmware?.token}`;
-          console.log(`Requesting firmware update of ${device.uid} to ${firmware?.filename}`);
+          console.log(`Requesting firmware update for ${device.uid} to ${firmware?.filename}`);
           $.mqtt_client.publish(topic,`{"url":"${link}"}`,{qos:1,retain:false});
 
           let obj = {
@@ -448,14 +460,14 @@ var self = module.exports = {
     object = {
       success : 1,
     }
-    await $.db_fota.updateLog(deviceId,obj);
+    await $.db_fota.updateLog(deviceId,object);
   },
 
   handleFotaError : async (deviceId, error) => {
     let object = {
       error : error,
     }
-    await $.db_fota.updateLog(deviceId,obj);
+    await $.db_fota.updateLog(deviceId,object);
   }
 }
 

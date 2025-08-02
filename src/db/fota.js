@@ -7,7 +7,7 @@ var self = module.exports = {
 
 	  return new Promise((resolve,reject) => {
 
-	    let query = `SELECT COUNT(*) FROM ?? where 
+	    let query = `SELECT * FROM ?? where 
 	    	device_id = ? and
 	    	target_version = ? and
 	    	target_app_version = ? and
@@ -91,13 +91,13 @@ var self = module.exports = {
 				obj['createdAt'] = moment().utc().format('YYYY-MM-DD HH:mm:ss');
 				obj['device_id'] = deviceId;
 
-		    $.db.insert("fota",obj)
-		    .then (rows => {
-		      return resolve(rows[0]);
-		    })
-		    .catch(error => {
-		      return reject(error);
-		    });
+			    $.db.insert("fota",obj)
+			    .then (rows => {
+			      return resolve(rows[0]);
+			    })
+			    .catch(error => {
+			      return reject(error);
+			    });
 
 			}else{
 
@@ -106,18 +106,18 @@ var self = module.exports = {
 				};
 
 				$.db.update("fota",obj,filter)
-		    .then (rows => {
-		      return resolve(rows[0]);
-		    })
-		    .catch(error => {
-		      return reject(error);
-		    });
+			    .then (rows => {
+			      return resolve(rows[0]);
+			    })
+			    .catch(error => {
+			      return reject(error);
+			    });
 			}
 
 		});
 	},
 
-	getDeviceLastLog : async(deviceId)=>{
+	getFotaLastLog : async(deviceId)=>{
 
 		return new Promise((resolve,reject) => {
 
@@ -127,7 +127,7 @@ var self = module.exports = {
 	    	LIMIT 1`;
 
 	    let table = [
-	    	"fota",
+	    	"logs_fota",
 	    	deviceId,
     	];
 	    query = mysql.format(query,table);
@@ -195,7 +195,7 @@ var self = module.exports = {
 
 		return new Promise(async (resolve,reject) => {
 
-			const log = await getDeviceLastLog(deviceId);
+			const log = await self.getFotaLastLog(deviceId);
 
 			if(log?.createdAt != log?.updatedAt)
 
