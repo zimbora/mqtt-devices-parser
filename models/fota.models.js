@@ -4,6 +4,9 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.INTEGER,
 			unique: true,
 		},
+		model_id: {
+			type: DataTypes.INTEGER,
+		},
 		target_version: {
 			type: DataTypes.STRING,
 		},
