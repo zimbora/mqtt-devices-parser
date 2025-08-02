@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.14
+	Fixes check FOTA mechanism and response
+	
 ## 1.0.13
 	adds 2 new tables to db:
 	Adds 5 new columns to devices
