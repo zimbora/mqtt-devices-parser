@@ -8,4 +8,7 @@
 
 ## Releasing
 
+	launch release on git:
+		>> gh release create ${tag}
+
   npm publish
