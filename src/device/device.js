@@ -401,19 +401,22 @@ var self = module.exports = {
           const model_name = model?.name;
           let topic = "";
           if(model_name == "sniffer"){
-            resolve();
-            // !! This cannot be handled on this way
 
             // get sniffer info associated to device
-            const sniffer = await $.db_data.getAssociatedToDevice("sniffer",device.id);
-            if(sniffer == null) return;
+            const associatedDevice = await $.db_device.getAssociatedDevice(device.id);
+            if(associatedDevice == null) return;
+
             // get device_uid from devices table
-            const gw = await $.db_device.getById(sniffer?.id)
+            const gw = await $.db_device.getById(associatedDevice)
             if(gw == null) return;
-            let mqtt_prefix = `${project_name}/${gw.uid}`;
-            if (semver.gt(sniffer.version, "2.0.1"))
+
+            const gwProject = await $.db_project.getById(gw?.project_id);
+            const gwProjectName = project?.name;
+
+            let mqtt_prefix = `${gwProjectName}/${gw?.uid}`;
+            if (semver.gt(gw.app_version, "1.0.5"))
               topic = mqtt_prefix+`/app/sniffer/${sniffer.uid}/fota/update/set`;
-            else
+            else // deprecate it as soon as all gws are updated
               topic = mqtt_prefix+`/app/sniffer/fota/update/set`;
           }
           else{
