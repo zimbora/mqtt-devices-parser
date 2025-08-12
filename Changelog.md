@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.0.15
+	src/device/device: fixes fota for sniffer model
 	changes DB tables:
 	 - adds level to modelPermissions
 	 - adds project_id to model
