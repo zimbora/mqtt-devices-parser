@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.15
+	changes DB tables:
+	 - adds level to modelPermissions
+	 - adds project_id to model
+	 - adds projectPermissions table
+	 - deletes file modelPermissions.js
+
 ## 1.0.14
 	Fixes check FOTA mechanism and response
 	

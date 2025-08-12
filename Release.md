@@ -3,6 +3,7 @@
 ## Before release
 
   increases version on package.json
+  run npm install
   edit changelog
   commit and push to repo
 
