@@ -14,6 +14,9 @@ module.exports = (sequelize,DataTypes)=>{
 				model: 'models',
 				key: 'id'
 			}
+		},
+		level: {
+			type: DataTypes.INTEGER,
 		}
 	},
 	{

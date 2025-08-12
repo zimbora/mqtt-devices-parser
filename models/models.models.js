@@ -16,6 +16,10 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		project_id: {
+			type: DataTypes.INTEGER,
+			allowNull: false	
+		},
 		fw_enabled: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false
