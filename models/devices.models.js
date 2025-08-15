@@ -59,11 +59,14 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.INTEGER,
 			allowNull: true
 		},
-		endpoint: { // info about protocol communication
-			type: DataTypes.JSON,
+		protocol: { // protocol communication to be used
+			type: DataTypes.STRING,
+			allowNull: false
+		},
+		psk: { // pre shared key
+			type: DataTypes.STRING,
 			allowNull: true
 		},
-
 	},
 	{
 		tableName: 'devices',
