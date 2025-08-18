@@ -20,6 +20,10 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		mqtt_password: {
+			type: DataTypes.STRING(24),
+			allowNull: true
+		},
 		gmail: {
 			type: DataTypes.STRING(64),
 			//unique: true,
