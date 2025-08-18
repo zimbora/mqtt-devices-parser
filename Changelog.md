@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.16
+	changes db tables:
+	 - models/devices.models: removes endpoint, adds protocol and psk.
+	 - adds mqtt_password
+
 ## 1.0.15
 	src/device/device: fixes fota for sniffer model
 	changes DB tables:
