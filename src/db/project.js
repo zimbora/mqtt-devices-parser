@@ -64,13 +64,15 @@ var self = module.exports = {
 	  });
 	},
 
-	insert : async(project, project_table, logs_table)=>{
+	insert : async(project, project_table, logs_table, projectOptions)=>{
 
 		return new Promise((resolve,reject) => {
 			let obj = {
 				name : project,
 				project_table : project_table,
 				logs_table : logs_table,
+				uidPrefix : projectOptions.uidPrefix,
+				uidLength : projectOptions.uidLength,
 				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
 				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}

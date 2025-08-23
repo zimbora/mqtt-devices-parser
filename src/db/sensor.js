@@ -95,7 +95,9 @@ var self = module.exports = {
 			let obj = {
 				device_id : deviceId,
 				sensor_id : sensorId,
-				value : payload,
+				value : payload?.value,
+				error : payload?.error,
+				obj : payload?.object,
 				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
 				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
