@@ -26,5 +26,9 @@ module.exports = {
   sync_main_tables : process.env.sync_main_tables || true,
   projects: {
     demo : process.env.demo || false,
+  },
+  demo : {
+    uidPrefix: 'uid:',
+    uidLength: 16 // max len for uid
   }
 }

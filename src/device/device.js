@@ -1,13 +1,12 @@
 const moment = require('moment');
 
 var _project = [];
-const logs_table = "sensor_logs";
+const logs_table = "logs_sensor";
 const semver = require('semver');
 
 var self = module.exports = {
 
   init : async (config,projects)=>{
-
     return new Promise(async (resolve,reject) => {
       $.db.connect(config,()=>{
         console.log("MYSQL is connected");
@@ -19,10 +18,12 @@ var self = module.exports = {
           };
           _project[name].module = require(`${BASE_DIR}/projects/${name}/${name}.js`)
           _project[name].module?.init();
+          let projectOptions = config[name];
           let row = await $.db_project.getByName(name);
+          
           if(row == null)
-            $.db_project.insert(name,name,"logs_"+name);
-
+            $.db_project.insert(name,name,"logs_"+name,projectOptions);
+          
           if(counter == projects.length-1)
             return resolve();
         })
@@ -60,7 +61,7 @@ var self = module.exports = {
     topic = topic.substring(index+1);
 
     // check if topic corresponds to a device
-    if(uid.startsWith(project.uidPrefix) && uid.length == project?.uidLength){
+    if(uid.startsWith(project.uidPrefix) && uid.length <= project?.uidLength){
 
       let device = await $.db_device.get(uid);
 
@@ -159,15 +160,40 @@ var self = module.exports = {
           } 
         }
       }else if(topic.startsWith("sensor/")){
-        updateSensor(device,topic,paylaod)
+        //updateSensor(device,topic,payload)
         index = topic.indexOf("/");
-        if(index == -1)
-            return;
+        if(index != -1){
+          const ref = topic.substring(index+1);
+          let res = await $.db_device.getSensorByRef(device.id,ref)
+          if(res == null)
+            res = await $.db_model.getSensorByRef(device.model_id,ref)
+          if(res != null){
+            object = null;
+            value = null;
+            error = null;
+            try{
+              object = JSON.parse(payload);
+            }catch(err){
+              console.log(err);
+            }
+            if (typeof object === 'object' && object !== null) {
+              value = object?.value;
+              error = object?.error;
+            }else{
+              value = payload;
+            }
 
-        const name = topic.substring(index+1);
-        let res = await $.db_sensor.getByRef(topic)
-        if(res != null){
-          await $.db_sensor.insert(logs_table,device.id,res.id,payload);
+            if(value || error)
+              object = null;
+
+            const data = {
+              object,
+              value,
+              error
+            }
+
+            await $.db_sensor.insert(logs_table,device.id,res.id,data);
+          }
         }
       }
 
@@ -314,15 +340,15 @@ var self = module.exports = {
 
     for (const model of models) {
       
-      console.log("model:",model?.name);
+      //console.log("model:",model?.name);
       if(!model?.id)
         continue;
 
       try{
         const latestVersion = await $.db_firmware.getLatestVersion(model.id,release);
         const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release);
-        console.log("latestVersion:",latestVersion?.version);
-        console.log("latestAppVersion:",latestAppVersion?.app_version);
+        //console.log("latestVersion:",latestVersion?.version);
+        //console.log("latestAppVersion:",latestAppVersion?.app_version);
 
         const devices = await $.db_device.listByModel(model.id);
 

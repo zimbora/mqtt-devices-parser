@@ -387,6 +387,27 @@ var self = module.exports = {
 	    });
 		    
 		});
+	},
+
+	getSensorByRef : async(deviceId, ref)=>{
+		return new Promise((resolve,reject) => {
+
+	    let query = "SELECT * FROM ?? where device_id = ? and ref = ?";
+	    let args = ["sensors",deviceId,ref];
+	    query = mysql.format(query,args);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	      if(rows.length > 0)
+	        return resolve(rows[0]);
+	      else
+	        return resolve(null);
+	    })
+	    .catch( err => {
+	      console.log(err);
+	      return resolve(null);
+	    });
+	  });
 	}
 
 }

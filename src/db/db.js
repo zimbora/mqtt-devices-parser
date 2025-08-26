@@ -144,6 +144,67 @@ var self = module.exports = {
     });
   },
 
+  updateOrInsert: async (table, data, filter) => {
+    return new Promise((resolve, reject) => {
+      self.getConnection((err, conn) => {
+        if (err) return reject(err);
+
+        let updateQuery = "";
+        let updateValues = [];
+
+        if (typeof data === "object") {
+          const keys = Object.keys(data);
+          updateValues = Object.values(data);
+          updateQuery = `UPDATE ?? SET ${keys.map(key => `${key} = ?`).join(', ')}`;
+        } else {
+          self.close_db_connection(conn);
+          return reject("data passed is not an object");
+        }
+
+        if (typeof filter === "object") {
+          const filterKeys = Object.keys(filter);
+          const filterValues = Object.values(filter);
+          updateQuery += ` WHERE ${filterKeys.map(key => `${key} = ?`).join(' AND ')}`;
+          updateValues.push(...filterValues);
+        } else {
+          self.close_db_connection(conn);
+          return reject("filter passed is not an object");
+        }
+
+        updateValues.unshift(table);
+        updateQuery = mysql.format(updateQuery, updateValues);
+
+        conn.query(updateQuery, function (err, rows) {
+          if (err) {
+            self.close_db_connection(conn);
+            return reject(err);
+          }
+          // If affectedRows = 0, do an insert
+          if (rows.affectedRows === 0) {
+            // Combine data and filter for insert
+            const insertObj = { ...filter, ...data }; // filter first, data overrides on conflict
+            const insertKeys = Object.keys(insertObj);
+            const insertValues = Object.values(insertObj);
+
+            const insertQuery = mysql.format(
+              `INSERT INTO ?? (${insertKeys.map(() => '??').join(', ')}) VALUES (${insertKeys.map(() => '?').join(', ')})`,
+              [table, ...insertKeys, ...insertValues]
+            );
+
+            conn.query(insertQuery, function (insertErr, insertRows) {
+              self.close_db_connection(conn);
+              if (insertErr) return reject(insertErr);
+              else return resolve(insertRows);
+            });
+          } else {
+            self.close_db_connection(conn);
+            return resolve(rows);
+          }
+        });
+      });
+    });
+  },
+
   // update column with json data
   updateJSON : async (table, column, data, filter) => {
 

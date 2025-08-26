@@ -1,14 +1,13 @@
 
 module.exports = (sequelize,DataTypes)=>{
 	return sequelize.define("sensors", {
-		model_id: {
+		model_id: { // reference a model
 			type: DataTypes.INTEGER,
-			unique: false,
-			allowNull: false,
-			references: {
-				model: 'models',
-				key: 'id'
-			}
+			allowNull: true,
+		},
+		device_id: { // reference a device id
+			type: DataTypes.INTEGER,
+			allowNull: true,
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
