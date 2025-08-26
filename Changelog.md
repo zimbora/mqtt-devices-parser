@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.17
+	Fix and improve Sensors, checks uid length
+	config/index: When defining a project from here uidPrefix and uidLength must be defined
+	models/logs_sensor.models: removes client_id association
+	models/sensors.models: removes unique and references properties from model_id, adds device_id
+	src/db/db: adds method updateOrInsert
+	src/db/device: adds method getSensorByRef
+	src/db/model: adds method getSensorByRef
+	src/db/project: adds uidPrefix and uidLength properties
+	src/db/sensor: insert: adds fields error and obj
+	src/device/device:
+	 - fixes logs_table
+	 - adds projectOptions
+	 - checks if device.uidLength <= project.uidLength
+	 - looks for sensor ref by device_id first and then by model_id if not found. Insert object, value and error fields
+	 - removes some fota logs
+
 ## 1.0.16
 	changes db tables:
 	 - models/devices.models: removes endpoint, adds protocol and psk.
