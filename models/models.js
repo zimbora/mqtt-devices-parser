@@ -246,5 +246,153 @@ var self = module.exports = {
         });
     });
   },
-  
+
+  seedCommonLwM2MObjects: async(objects) => {
+    try {
+      const results = await Promise.all(
+        objects.map(async (object) => {
+          const [record, created] = await sequelize.models['lwm2mObjects'].upsert(
+            {
+              objectId: object.objectId,
+              name: object.name,
+              description: object.description,
+            },
+            {
+              where: { objectId: object.objectId }, // Ensure the record exists based on objectId
+            }
+          );
+          return { record, created };
+        })
+      );
+      console.log("Insert/Update completed for LwM2M Objects.");
+      return results;
+    } catch (error) {
+      console.error("Error inserting/updating LwM2M Objects:", error.message);
+      throw error;
+    }
+  },
+  /*
+  seedCommonLwM2MResources: async(resources) => {
+    try {
+      const results = await Promise.all(
+        resources.map(async (resource) => {
+          const [record, created] = await sequelize.models['lwm2mResources'].upsert(
+            {
+              objectId: resource.objectId,
+              resourceId: resource.resourceId,
+              name: resource.name,
+              description: resource.description,
+            },
+            {
+              where: { objectId: object.objectId, resourceId: object.resourceId }, // Ensure the record exists based on objectId and resourceId
+            }
+          );
+          return { record, created };
+        })
+      );
+      console.log("Insert/Update completed for LwM2M Resources.");
+      return results;
+    } catch (error) {
+      console.error("Error inserting/updating LwM2M Resources:", error.message);
+      throw error;
+    }
+  },
+  */
+
+  /**
+ * Seed LwM2M resources into the database.
+ *
+ * Expected DB model: sequelize.models['lwm2mResources']
+ * with a composite unique key on (objectId, resourceId) recommended.
+ *
+ * @param {Array} resources - Either:
+ *   - Flat: [{ objectId, resourceId, name, description }, ...]
+ *   - Nested: [{ objectId, name, resources: [{ resourceId, name, description }, ...] }, ...]
+ * @param {import('sequelize').Sequelize} sequelize - An initialized Sequelize instance.
+ * @returns {Promise<Array<{ objectId:number, resourceId:number, created:boolean, updated:boolean }>>}
+ */
+  seedCommonLwM2MResources: async (resources) => {
+    if (!sequelize || !sequelize.models || !sequelize.models['lwm2mResources']) {
+      throw new Error("sequelize instance with model 'lwm2mResources' is required");
+    }
+    if (!Array.isArray(resources)) {
+      throw new Error('resources must be an array');
+    }
+
+    // Normalize input: flatten nested object.resources into a flat {objectId,resourceId,...} list
+    const flatResources = [];
+    for (const entry of resources) {
+      if (entry && Array.isArray(entry.resources)) {
+        // Nested structure: object -> resources[]
+        for (const res of entry.resources) {
+          flatResources.push({
+            objectId: entry.objectId,
+            resourceId: res.resourceId,
+            name: res.name,
+            description: res.description
+          });
+        }
+      } else if (
+        entry &&
+        typeof entry.objectId !== 'undefined' &&
+        typeof entry.resourceId !== 'undefined'
+      ) {
+        // Already flat
+        flatResources.push({
+          objectId: entry.objectId,
+          resourceId: entry.resourceId,
+          name: entry.name,
+          description: entry.description
+        });
+      } else {
+        // Skip invalid entries but warn
+        // eslint-disable-next-line no-console
+        console.warn('Skipping invalid resource entry:', entry);
+      }
+    }
+
+    const { lwm2mResources } = sequelize.models;
+
+    const results = [];
+    try {
+      await sequelize.transaction(async (t) => {
+        for (const res of flatResources) {
+          const where = { objectId: res.objectId, resourceId: res.resourceId };
+
+          // Try to find existing record
+          const [record, created] = await lwm2mResources.findOrCreate({
+            where,
+            defaults: {
+              name: res.name,
+              description: res.description
+            },
+            transaction: t
+          });
+
+          if (!created) {
+            // Update existing with latest values
+            await record.update(
+              { name: res.name, description: res.description },
+              { transaction: t }
+            );
+          }
+
+          results.push({
+            objectId: res.objectId,
+            resourceId: res.resourceId,
+            created,
+            updated: !created
+          });
+        }
+      });
+
+      // eslint-disable-next-line no-console
+      console.log('Insert/Update completed for LwM2M Resources.');
+      return results;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error inserting/updating LwM2M Resources:', error.message);
+      throw error;
+    }
+  }
 };
