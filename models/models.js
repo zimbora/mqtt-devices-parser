@@ -39,22 +39,28 @@ var self = module.exports = {
 
   load: async (modelsPath) => {
     return new Promise(async (resolve, reject) => {
-      var files = await fs.readdir(modelsPath);
-      files = files.filter((file) => {
-        // Exclude models.js and non-js files
-        return (
-          file.indexOf('.') !== 0 &&
-          file !== 'models.js' &&
-          file.slice(-9) === 'models.js'
-        );
-      });
-      files.forEach((file, counter) => {
-        const model = require(path.join(modelsPath, file));
-        model(sequelize, DataTypes);
-        if (counter === files.length - 1) {
-          return resolve();
+      try {
+        let files = await fs.readdir(modelsPath);
+        files = files.filter((file) => {
+          // Exclude models.js and non-js files
+          return (
+            file.indexOf('.') !== 0 &&
+            file !== 'models.js' &&
+            file.slice(-9) === 'models.js'
+          );
+        });
+
+        // Use a for...of loop to load models sequentially
+        for (const file of files) {
+          console.log(`Sync file ${file}`);
+          const model = require(path.join(modelsPath, file));
+          await model(sequelize, DataTypes); // Ensure each model is loaded before moving to the next
         }
-      });
+
+        resolve(); // Resolve the Promise after all files are processed
+      } catch (error) {
+        reject(error); // Reject the Promise on any error
+      }
     });
   },
 

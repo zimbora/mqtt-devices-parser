@@ -94,7 +94,7 @@ var self = module.exports = {
 
     //main tables
     if($.config.sync_main_tables){
-
+      
       await $.models.load(__dirname+"/models");
       await $.models.dropTableIndexes();
       await $.models.sync();
@@ -106,7 +106,7 @@ var self = module.exports = {
       await $.models.insertUser("client","client_pwd",3);
       // adds client with credentials admin@admin
       await $.models.insertClient("admin","admin",user_id); // dashboard login
-
+      
       for(name of projects){
         project = $.config[name];
         if (project) {
@@ -119,9 +119,6 @@ var self = module.exports = {
 
     // project tables
     await self.readModelsInsideProjects(projectsPath);
-    await $.models.dropTableIndexes();
-    await $.models.sync();
-
   }
 }
 
