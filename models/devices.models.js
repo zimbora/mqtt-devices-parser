@@ -20,6 +20,10 @@ module.exports = (sequelize,DataTypes)=>{
 				key: 'id'
 			}
 		},
+		template_id: {
+			type: DataTypes.INTEGER,
+			allowNull: true
+		},
 		model_id: {
 			type: DataTypes.INTEGER,
 			references: {
