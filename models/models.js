@@ -253,7 +253,7 @@ var self = module.exports = {
     });
   },
 
-  seedCommonLwM2MObjects: async(objects) => {
+  seedLwM2MObjects: async(objects) => {
     try {
       const results = await Promise.all(
         objects.map(async (object) => {
@@ -261,7 +261,7 @@ var self = module.exports = {
             {
               objectId: object.objectId,
               name: object.name,
-              description: object.description,
+              description: object?.description,
             },
             {
               where: { objectId: object.objectId }, // Ensure the record exists based on objectId
@@ -317,7 +317,7 @@ var self = module.exports = {
  * @param {import('sequelize').Sequelize} sequelize - An initialized Sequelize instance.
  * @returns {Promise<Array<{ objectId:number, resourceId:number, created:boolean, updated:boolean }>>}
  */
-  seedCommonLwM2MResources: async (resources) => {
+  seedLwM2MResources: async (resources) => {
     if (!sequelize || !sequelize.models || !sequelize.models['lwm2mResources']) {
       throw new Error("sequelize instance with model 'lwm2mResources' is required");
     }
