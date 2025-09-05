@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.19
+	Removes adding project on launching process
+	models/models:
+	 - seedCommonLwM2MObjects: avoids error on description property not defined on object
+	 - changes lwm2m seed functions name
+	 
 ## 1.0.18
 	Fix and improve Sensors, checks uid length
 	Adds seedCommonLwM2MObjects and seedCommonLwM2MResources functions
