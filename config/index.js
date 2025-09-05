@@ -27,7 +27,7 @@ module.exports = {
   projects: {
     demo : process.env.demo || false,
   },
-  demo : {
+  demo : { // not need anymore. Can be created on dashboard
     uidPrefix: 'uid:',
     uidLength: 16 // max len for uid
   }

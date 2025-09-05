@@ -107,6 +107,7 @@ var self = module.exports = {
       // adds client with credentials admin@admin
       await $.models.insertClient("admin","admin",user_id); // dashboard login
       
+      /* Add projects using dashboard !!
       for(name of projects){
         project = $.config[name];
         if (project) {
@@ -115,6 +116,7 @@ var self = module.exports = {
           await $.models.insertProject(projectData);
         }
       }
+      */
     }
 
     // project tables
