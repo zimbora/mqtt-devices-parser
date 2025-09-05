@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.18
+	Fix and improve Sensors, checks uid length
+	Adds seedCommonLwM2MObjects and seedCommonLwM2MResources functions
+	fixes sync project tables. Makes load .models more robust
+	Adds templates table
+	add template_id to devices table
+
 ## 1.0.17
 	Fix and improve Sensors, checks uid length
 	config/index: When defining a project from here uidPrefix and uidLength must be defined
