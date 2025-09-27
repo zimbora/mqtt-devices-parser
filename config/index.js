@@ -17,7 +17,7 @@ module.exports = {
     parseMessages: process.env.MQTT_PARSE_MESSAGES !== 'false' // Default to true for backward compatibility
   },
   kafka: {
-    enabled: process.env.KAFKA_ENABLED === 'true',
+    enabled: process.env.KAFKA_ENABLED === 'true' ? true : true,
     brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
     groupId: process.env.KAFKA_GROUP_ID || 'mqtt-devices-parser-group',
     clientId: process.env.KAFKA_CLIENT_ID || 'mqtt-devices-parser',
@@ -26,7 +26,7 @@ module.exports = {
       username: process.env.KAFKA_SASL_USERNAME || '',
       password: process.env.KAFKA_SASL_PASSWORD || ''
     },
-    ssl: process.env.KAFKA_SSL === 'true',
+    ssl: process.env.KAFKA_SSL === 'true' ? true : false,
     connectionTimeout: parseInt(process.env.KAFKA_CONNECTION_TIMEOUT) || 3000,
     requestTimeout: parseInt(process.env.KAFKA_REQUEST_TIMEOUT) || 30000
   },
