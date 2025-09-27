@@ -7,6 +7,7 @@ var running = false;
 var self = module.exports = {
 
   init: async (config, projects) => {
+
     return new Promise(async (resolve, reject) => {
       try {
         if (!config.kafka.enabled) {
@@ -92,7 +93,7 @@ var self = module.exports = {
       await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
           try {
-            const payload = message.value ? message.value.toString() : '';
+            let payload = message.value ? message.value.toString() : '';
             const kafkaTopic = topic.toString();
             
             // Format message to look like MQTT format for compatibility
@@ -110,12 +111,12 @@ var self = module.exports = {
               formattedTopic = `${kafkaTopic}/${devicePath}`;
             }
 
-            console.log(`[Kafka] Processing message - Topic: ${formattedTopic}, Payload length: ${payload.length}`);
+            try{
+              payload = JSON.parse(payload);
+            }catch(error){}
 
             // Call the device parser with formatted topic
-            await $.device.parseMessage(null, formattedTopic, payload, false);
-
-            console.log(`[Kafka] Message processed successfully - Topic: ${formattedTopic}`);
+            await $.device.parseMessage(payload.client.id, formattedTopic, payload.mqtt.payload, payload.mqtt.retain);
 
           } catch (error) {
             console.error('[Kafka] Error processing message:', {
