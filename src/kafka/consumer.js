@@ -110,13 +110,20 @@ var self = module.exports = {
               formattedTopic = `${kafkaTopic}/${devicePath}`;
             }
 
-            console.log(`Kafka message received - Topic: ${formattedTopic}, Payload: ${payload}`);
+            console.log(`[Kafka] Processing message - Topic: ${formattedTopic}, Payload length: ${payload.length}`);
 
             // Call the device parser with formatted topic
             await $.device.parseMessage(null, formattedTopic, payload, false);
 
+            console.log(`[Kafka] Message processed successfully - Topic: ${formattedTopic}`);
+
           } catch (error) {
-            console.error('Error processing Kafka message:', error);
+            console.error('[Kafka] Error processing message:', {
+              topic: topic.toString(),
+              partition,
+              offset: message.offset ? message.offset.toString() : 'unknown',
+              error: error.message
+            });
           }
         },
       });
