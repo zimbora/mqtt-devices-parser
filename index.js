@@ -7,6 +7,7 @@ $.md5 = require('md5');
 $.config = require('./config');
 $.models = require('./models/models.js');
 $.device = require('./src/device/device.js');
+$.kafka_consumer = require('./src/kafka/consumer.js');
 $.db = require('./src/db/db');
 $.db_data = require('./src/db/data');
 $.db_project = require('./src/db/project');
@@ -39,6 +40,12 @@ var self = module.exports = {
 
       //auth.init();
       await $.device.init($.config,projects);
+
+      // Initialize Kafka consumer if enabled
+      if ($.config.kafka.enabled) {
+        await $.kafka_consumer.init($.config, projects);
+        await $.kafka_consumer.start();
+      }
 
       console.log("mqtt connecting..")
       mqtt_connect();
@@ -181,8 +188,11 @@ function mqtt_connect(){
   });
 
   $.mqtt_client.on("message", (topic, payload, packet) => {
-    // payload is Buffer
-    $.device.parseMessage($.mqtt_client,topic.toString(),payload.toString(),packet.retain);
+    // Only parse MQTT messages if enabled in configuration
+    if ($.config.mqtt.parseMessages) {
+      // payload is Buffer
+      $.device.parseMessage($.mqtt_client,topic.toString(),payload.toString(),packet.retain);
+    }
   });
 
   $.mqtt_client.on("reconnect",()=>{
