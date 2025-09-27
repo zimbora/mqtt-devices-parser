@@ -13,7 +13,22 @@ module.exports = {
     user:process.env.MQTT_USER || 'admin',
     pwd:process.env.MQTT_PWD || 'admin',
     client:process.env.MQTT_CLIENT || 'mqtt-devices-parser',
-    logs_path: process.env.MQTT_LOGS || 'uServices'
+    logs_path: process.env.MQTT_LOGS || 'uServices',
+    parseMessages: process.env.MQTT_PARSE_MESSAGES !== 'false' // Default to true for backward compatibility
+  },
+  kafka: {
+    enabled: process.env.KAFKA_ENABLED === 'true',
+    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+    groupId: process.env.KAFKA_GROUP_ID || 'mqtt-devices-parser-group',
+    clientId: process.env.KAFKA_CLIENT_ID || 'mqtt-devices-parser',
+    sasl: {
+      mechanism: process.env.KAFKA_SASL_MECHANISM || 'plain', // plain, scram-sha-256, scram-sha-512
+      username: process.env.KAFKA_SASL_USERNAME || '',
+      password: process.env.KAFKA_SASL_PASSWORD || ''
+    },
+    ssl: process.env.KAFKA_SSL === 'true',
+    connectionTimeout: parseInt(process.env.KAFKA_CONNECTION_TIMEOUT) || 3000,
+    requestTimeout: parseInt(process.env.KAFKA_REQUEST_TIMEOUT) || 30000
   },
   mysqldb: {
     conn_limit: process.env.DB_CONN_LIMIT || 15,
