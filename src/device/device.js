@@ -35,6 +35,10 @@ var self = module.exports = {
 
   parseMessage : async (client,topic,payload,retain)=>{
 
+    try{
+      payload = JSON.parse(payload)
+    }catch(err){};
+    
     let topic_bck = topic;
 
     //let index = topic.indexOf(MACRO_UID_PREFIX);
