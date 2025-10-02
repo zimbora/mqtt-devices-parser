@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.20
+	Adds Kafka consumer support with optional MQTT message parsing (#5)
+	supports tables for mqtt templates
+
 ## 1.0.19
 	Removes adding project on launching process
 	models/models:
