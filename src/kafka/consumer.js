@@ -92,6 +92,9 @@ var self = module.exports = {
 
       await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
+
+          console.log(`[KAFKA] rx: ${message.key.toString()}`);
+
           try {
             let payload = message.value ? message.value.toString() : '';
             const kafkaTopic = topic.toString();
@@ -113,10 +116,13 @@ var self = module.exports = {
 
             try{
               payload = JSON.parse(payload);
-            }catch(error){}
+            }catch(error){
+              console.log(payload);
+              console.log(error)
+            }
 
             // Call the device parser with formatted topic
-            await $.device.parseMessage(payload.client.id, formattedTopic, payload.mqtt.payload, payload.mqtt.retain);
+            await $.device.parseMessage(payload.client.id, formattedTopic, JSON.stringify(payload.mqtt.payload), payload.mqtt.retain);
 
           } catch (error) {
             console.error('[Kafka] Error processing message:', {
