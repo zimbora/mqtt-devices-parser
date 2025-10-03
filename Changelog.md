@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.21
+	src/kafka/consumer: fixes parseMessage call
+	improves: logs
+	
 ## 1.0.20
 	Adds Kafka consumer support with optional MQTT message parsing (#5)
 	supports tables for mqtt templates
