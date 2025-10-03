@@ -11,11 +11,11 @@ var self = module.exports = {
     return new Promise(async (resolve, reject) => {
       try {
         if (!config.kafka.enabled) {
-          console.log("Kafka consumer is disabled");
+          console.log("[Kafka] consumer is disabled");
           return resolve();
         }
 
-        console.log("Initializing Kafka consumer...");
+        console.log("[Kafka] Initializing consumer...");
 
         // Build Kafka configuration
         const kafkaConfig = {
@@ -62,7 +62,7 @@ var self = module.exports = {
         const topics = projects.map(project => project.toString());
         
         if (topics.length === 0) {
-          console.log("No Kafka topics to subscribe to");
+          console.log("[Kafka] No topics to subscribe to");
           return resolve();
         }
 
@@ -71,11 +71,11 @@ var self = module.exports = {
           fromBeginning: false 
         });
 
-        console.log(`Kafka consumer subscribed to topics: ${topics.join(', ')}`);
+        console.log(`[Kafka] consumer subscribed to topics: ${topics.join(', ')}`);
 
         return resolve();
       } catch (error) {
-        console.error("Failed to initialize Kafka consumer:", error);
+        console.error("[Kafka] Failed to initialize consumer:", error);
         return reject(error);
       }
     });
@@ -87,7 +87,7 @@ var self = module.exports = {
     }
 
     try {
-      console.log("Starting Kafka consumer...");
+      console.log("[Kafka] Starting consumer...");
       running = true;
 
       await consumer.run({
@@ -117,7 +117,7 @@ var self = module.exports = {
             try{
               payload = JSON.parse(payload);
             }catch(error){
-              console.log(payload);
+              console.log(`[KAFKA] error: ${payload}`);
               console.log(error)
             }
 
@@ -135,9 +135,9 @@ var self = module.exports = {
         },
       });
 
-      console.log("Kafka consumer started successfully");
+      console.log("[Kafka] consumer started successfully");
     } catch (error) {
-      console.error("Failed to start Kafka consumer:", error);
+      console.error("[KAFKA] Failed to start consumer:", error);
       running = false;
       throw error;
     }
@@ -149,13 +149,13 @@ var self = module.exports = {
     }
 
     try {
-      console.log("Stopping Kafka consumer...");
+      console.log("[KAFKA] Stopping consumer...");
       running = false;
       await consumer.stop();
       await consumer.disconnect();
-      console.log("Kafka consumer stopped successfully");
+      console.log("[KAFKA] consumer stopped successfully");
     } catch (error) {
-      console.error("Error stopping Kafka consumer:", error);
+      console.error("[KAFKA] Error stopping consumer:", error);
     }
   },
 

@@ -178,6 +178,7 @@ var self = module.exports = {
             try{
               object = JSON.parse(payload);
             }catch(err){
+              console.log(payload)
               console.log(err);
             }
             if (typeof object === 'object' && object !== null) {

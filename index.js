@@ -47,7 +47,6 @@ var self = module.exports = {
         await $.kafka_consumer.start();
       }
 
-      console.log("mqtt connecting..")
       mqtt_connect();
 
       setInterval(async ()=>{
@@ -133,6 +132,8 @@ var self = module.exports = {
 
 function mqtt_connect(){
 
+  console.log(`[MQTT] connecting to ${$.config.mqtt.host}:${$.config.mqtt.port}..`)
+
   const mqtt_prefix = $.config.mqtt.logs_path+"/"+$.config.mqtt.client;
   let checkFota = null;
   $.mqtt_client = mqtt.connect({
@@ -165,11 +166,21 @@ function mqtt_connect(){
           $.mqtt_client.publish(mqtt_prefix+"/"+project,"deactive",{qos:2,retain:true});
       };
     })
-    console.log(`MQTT connected to: ${$.config.mqtt.host}:${$.config.mqtt.port}`);
-    projects.map( project=>{
-      console.log("subscribing project:",project);
-      $.mqtt_client.subscribe(project+"/#")
-    })
+    console.log(`[MQTT] connected`);
+
+    if (!$.config.kafka.enabled) {
+      projects.map( project=>{
+        console.log("[MQTT] subscribing project:",project);
+        $.mqtt_client.subscribe(project+"/#", (err) => {
+          if(err){
+            console.log("[MQTT] error");
+            console.err(err);
+          }
+          else
+            console.log("[MQTT] subscribed to project:",project);
+        })
+      })
+    }
 
     // Update 'dev' devices at each 5 min 
     checkFota = setInterval(async ()=>{
@@ -189,32 +200,36 @@ function mqtt_connect(){
 
   $.mqtt_client.on("message", (topic, payload, packet) => {
     // Only parse MQTT messages if enabled in configuration
-    if ($.config.mqtt.parseMessages) {
+    if (!$.config.kafka.enabled) {
+
+      console.log(`[MQTT] rx: ${topic.toString()}`);
       // payload is Buffer
       $.device.parseMessage($.mqtt_client,topic.toString(),payload.toString(),packet.retain);
     }
   });
 
   $.mqtt_client.on("reconnect",()=>{
-    console.log("reconnect")
+    console.log("[MQTT] reconnected")
   });
 
   $.mqtt_client.on("close",()=>{
-    console.log("close")
+    console.log("[MQTT] closed")
     checkFota = null;
   });
 
   $.mqtt_client.on("offline",()=>{
-    console.log("offline")
+    console.log("[MQTT] offline")
     checkFota = null;
   });
 
   $.mqtt_client.on("disconnect",(packet)=>{
-    console.log(packet)
+    console.log([`MQTT] disconnected`);
+    console.log(packet);
     checkFota = null;
   })
 
   $.mqtt_client.on("error",(error)=>{
-    console.log(error)
+    console.log("[MQTT] error");
+    console.err(error)
   })
 }
