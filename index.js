@@ -223,7 +223,7 @@ function mqtt_connect(){
   });
 
   $.mqtt_client.on("disconnect",(packet)=>{
-    console.log([`MQTT] disconnected`);
+    console.log(`[MQTT] disconnected`);
     console.log(packet);
     checkFota = null;
   })
