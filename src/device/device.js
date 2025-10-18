@@ -35,6 +35,7 @@ var self = module.exports = {
 
   parseMessage : async (client,topic,payload,retain)=>{
 
+    console.log("device parse topic:",topic)
     try{
       payload = JSON.parse(payload)
     }catch(err){};
@@ -55,12 +56,21 @@ var self = module.exports = {
     
     let project_id = project?.id;
 
-    // --- uid ---
+    
     topic = topic.substring(index+1);
     index = topic.indexOf("/");
     if(index == -1)
         return;
 
+    // check if is from lwm2m gw
+    if(topic.startsWith("responses") || topic.startsWith("requests")){
+      topic = topic.substring(index+1);
+      index = topic.indexOf("/");
+      if(index == -1)
+        return;
+    }
+
+    // --- uid ---
     let uid = topic.substring(0,index);
     topic = topic.substring(index+1);
 
@@ -88,125 +98,194 @@ var self = module.exports = {
         $.db_device.addLog(device.id,"project_id",project_id);
       } 
 
-      switch (topic) {
-        case "status":
-          if (payload === "online" || payload === "offline") {
-            await $.db_device.update(device.id, "status", payload);
-            $.db_device.addLog(device.id,"status",payload);
-          }
-          break;
-        case "model":
-          let res = await $.db_model.getByName(payload);
-          let model_id = res?.id;
-          if (model_id != null && device?.tech != payload) {
-            await $.db_device.update(device.id, "model_id", model_id);
-            $.db_device.addLog(device.id,"model_id",model_id);
-          }
-          break;
-        case "tech":
-          if (device?.tech && payload != device.tech) {
-            await $.db_device.update(device.id, "tech", payload);
-            $.db_device.addLog(device.id,"tech",payload);
-          }
-          break;
-        case "version":
-          if (device?.version && payload != device.version) {
-            $.db_device.addLog(device.id,"version",payload);
-            await $.db_device.update(device.id, "version", payload);
-            await self.handleFotaSuccess(device.id);
-          }
-          break;
-        case "app_version":
-          if (device?.app_version && payload != device.app_version) {
-            $.db_device.addLog(device.id,"app_version",payload);
-            await $.db_device.update(device.id, "app_version", payload);
-            await self.handleFotaSuccess(device.id);
-          }
-          break;
-        case "fw/fota/update/status":
-          await self.handleFotaError(device.id, payload);
-          break;
-        // Optional: default case if needed
-        default:
-          // handle other topics or do nothing
-          break;
+      if(device.protocol.toLowerCase() === "lwm2m"){
+        self.parseLwm2mMessage(client, project_name, device, topic, payload, retain);
+      }else if(device.protocol.toLowerCase() === "mqtt"){
+        self.parseMqttMessage(client, project_name, device, topic, payload, retain);
       }
+      
+    }
 
-      if(topic.startsWith("settings/") && topic.endsWith("/set") && payload != "" ){
-        // update local settings
-        let index = topic.indexOf("settings/");
-        topic = topic.substring(index+9);
-        self.updateLocalSettings(device,topic,payload);
-      }else if(topic.startsWith("settings/") && !topic.endsWith("/set") && payload != "" ){
-        // store remote device settings
-        let index = topic.indexOf("settings/");
-        topic = topic.substring(index+9);
-        self.updateRemoteSettings(device,topic,payload);
-      }else if(topic == "fw"){
-        try{
-          payload = JSON.parse(payload);
-        }catch(error){}
-        if(typeof payload === 'object' && payload !== null){
-          try{
-            $.db_data.updateJson("fw",device.id,payload);
-            $.db_data.addJsonLog("logs_fw",device.id,payload);
-          }catch(error){
-            console.error(error)
-          } 
-        }else if(typeof payload !== 'object' && payload !== null){
-          // change it to topic.startsWith("fw")
-          try{
-            const column = getWordAfterLastSlash(topic);
-            $.db_data.update("fw",device.id,column,payload);
-            $.db_data.addLog("logs_fw",device.id,column,payload);
-          }catch(error){
-            console.error(error)
-          } 
+  },
+
+  parseLwm2mMessage : async(client, project_name, device, topic, payload, retain)=>{
+
+    console.log("parse lwm2m message: ",topic);
+
+    switch (topic) {
+      case "status":
+        if (payload === "online" || payload === "offline") {
+          await $.db_device.update(device.id, "status", payload);
+          $.db_device.addLog(device.id,"status",payload);
         }
-      }else if(topic.startsWith("sensor/")){
-        //updateSensor(device,topic,payload)
-        index = topic.indexOf("/");
-        if(index != -1){
-          const ref = topic.substring(index+1);
-          let res = await $.db_device.getSensorByRef(device.id,ref)
-          if(res == null)
-            res = await $.db_model.getSensorByRef(device.model_id,ref)
-          if(res != null){
+        break;
+    }
+
+    if(topic.startsWith("sensor/")){
+      //updateSensor(device,topic,payload)
+      index = topic.indexOf("/");
+      if(index != -1){
+        const ref = topic.substring(index+1);
+        let res = await $.db_device.getSensorByRef(device.id,ref)
+        if(res == null)
+          res = await $.db_model.getSensorByRef(device.model_id,ref)
+        if(res != null){
+          object = null;
+          value = null;
+          error = null;
+          try{
+            object = JSON.parse(payload);
+          }catch(err){
+            console.log(payload)
+            console.log(err);
+          }
+          if (typeof object === 'object' && object !== null) {
+            value = object?.value;
+            error = object?.error;
+          }else{
+            value = payload;
+          }
+
+          if(value || error)
             object = null;
-            value = null;
-            error = null;
-            try{
-              object = JSON.parse(payload);
-            }catch(err){
-              console.log(payload)
-              console.log(err);
-            }
-            if (typeof object === 'object' && object !== null) {
-              value = object?.value;
-              error = object?.error;
-            }else{
-              value = payload;
-            }
 
-            if(value || error)
-              object = null;
-
-            const data = {
-              object,
-              value,
-              error
-            }
-
-            await $.db_sensor.insert(logs_table,device.id,res.id,data);
+          const data = {
+            object,
+            value,
+            error
           }
-        }
-      }
 
-      if(_project[project_name]){
-        _project[project_name]?.module?.parseMessage(client,project_name,device,topic,payload,retain,()=>{});
+          await $.db_sensor.insert(logs_table,device.id,res.id,data);
+        }
       }
     }
 
+    if(_project[project_name]){
+      console.log("parse project msg:", project_name);
+      _project[project_name]?.module?.parseMessage(client,project_name,device,topic,payload,retain,()=>{});
+    }
+  },
+
+  parseMqttMessage : async(device, topic, payload)=>{
+
+    switch (topic) {
+      case "status":
+        if (payload === "online" || payload === "offline") {
+          await $.db_device.update(device.id, "status", payload);
+          $.db_device.addLog(device.id,"status",payload);
+        }
+        break;
+      case "model":
+        let res = await $.db_model.getByName(payload);
+        let model_id = res?.id;
+        if (model_id != null && device?.tech != payload) {
+          await $.db_device.update(device.id, "model_id", model_id);
+          $.db_device.addLog(device.id,"model_id",model_id);
+        }
+        break;
+      case "tech":
+        if (device?.tech && payload != device.tech) {
+          await $.db_device.update(device.id, "tech", payload);
+          $.db_device.addLog(device.id,"tech",payload);
+        }
+        break;
+      case "version":
+        if (device?.version && payload != device.version) {
+          $.db_device.addLog(device.id,"version",payload);
+          await $.db_device.update(device.id, "version", payload);
+          await self.handleFotaSuccess(device.id);
+        }
+        break;
+      case "app_version":
+        if (device?.app_version && payload != device.app_version) {
+          $.db_device.addLog(device.id,"app_version",payload);
+          await $.db_device.update(device.id, "app_version", payload);
+          await self.handleFotaSuccess(device.id);
+        }
+        break;
+      case "fw/fota/update/status":
+        await self.handleFotaError(device.id, payload);
+        break;
+      // Optional: default case if needed
+      default:
+        // handle other topics or do nothing
+        break;
+    }
+
+    if(topic.startsWith("settings/") && topic.endsWith("/set") && payload != "" ){
+      // update local settings
+      let index = topic.indexOf("settings/");
+      topic = topic.substring(index+9);
+      self.updateLocalSettings(device,topic,payload);
+    }else if(topic.startsWith("settings/") && !topic.endsWith("/set") && payload != "" ){
+      // store remote device settings
+      let index = topic.indexOf("settings/");
+      topic = topic.substring(index+9);
+      self.updateRemoteSettings(device,topic,payload);
+    }else if(topic == "fw"){
+      try{
+        payload = JSON.parse(payload);
+      }catch(error){}
+      if(typeof payload === 'object' && payload !== null){
+        try{
+          $.db_data.updateJson("fw",device.id,payload);
+          $.db_data.addJsonLog("logs_fw",device.id,payload);
+        }catch(error){
+          console.error(error)
+        } 
+      }else if(typeof payload !== 'object' && payload !== null){
+        // change it to topic.startsWith("fw")
+        try{
+          const column = getWordAfterLastSlash(topic);
+          $.db_data.update("fw",device.id,column,payload);
+          $.db_data.addLog("logs_fw",device.id,column,payload);
+        }catch(error){
+          console.error(error)
+        } 
+      }
+    }else if(topic.startsWith("sensor/")){
+      //updateSensor(device,topic,payload)
+      index = topic.indexOf("/");
+      if(index != -1){
+        const ref = topic.substring(index+1);
+        let res = await $.db_device.getSensorByRef(device.id,ref)
+        if(res == null)
+          res = await $.db_model.getSensorByRef(device.model_id,ref)
+        if(res != null){
+          object = null;
+          value = null;
+          error = null;
+          try{
+            object = JSON.parse(payload);
+          }catch(err){
+            console.log(payload)
+            console.log(err);
+          }
+          if (typeof object === 'object' && object !== null) {
+            value = object?.value;
+            error = object?.error;
+          }else{
+            value = payload;
+          }
+
+          if(value || error)
+            object = null;
+
+          const data = {
+            object,
+            value,
+            error
+          }
+
+          await $.db_sensor.insert(logs_table,device.id,res.id,data);
+        }
+      }
+    }
+
+    if(_project[project_name]){
+      console.log("parse project msg:", project_name);
+      _project[project_name]?.module?.parseMessage(client,project_name,device,topic,payload,retain,()=>{});
+    }
   },
 
   deleteLogs : async()=>{
