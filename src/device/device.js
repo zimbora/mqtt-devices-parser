@@ -118,7 +118,7 @@ var self = module.exports = {
           await $.db_device.update(device.id, "status", payload);
           $.db_device.addLog(device.id,"status",payload);
         }
-        break;
+        return;
     }
 
     if(topic.startsWith("sensor/")){
@@ -130,18 +130,15 @@ var self = module.exports = {
         if(res == null)
           res = await $.db_model.getSensorByRef(device.model_id,ref)
         if(res != null){
-          object = null;
+          object = payload;
           value = null;
           error = null;
-          try{
-            object = JSON.parse(payload);
-          }catch(err){
-            console.log(payload)
-            console.log(err);
-          }
+          timestamp = null;
+
           if (typeof object === 'object' && object !== null) {
-            value = object?.value;
-            error = object?.error;
+            value = object?.value || object?.v;
+            error = object?.error || object?.e;
+            timestamp = object?.timestamp || objects?.ts;
           }else{
             value = payload;
           }
@@ -152,10 +149,12 @@ var self = module.exports = {
           const data = {
             object,
             value,
-            error
+            error,
+            timestamp
           }
 
-          await $.db_sensor.insert(logs_table,device.id,res.id,data);
+          $.db_sensor.insert(logs_table,device.id,res.id,data);
+          return;
         }
       }
     }
@@ -252,18 +251,15 @@ var self = module.exports = {
         if(res == null)
           res = await $.db_model.getSensorByRef(device.model_id,ref)
         if(res != null){
-          object = null;
+          object = payload;
           value = null;
           error = null;
-          try{
-            object = JSON.parse(payload);
-          }catch(err){
-            console.log(payload)
-            console.log(err);
-          }
+          timestamp = null;
+
           if (typeof object === 'object' && object !== null) {
-            value = object?.value;
-            error = object?.error;
+            value = object?.value || object?.v;
+            error = object?.error || object?.e;
+            timestamp = object?.timestamp || objects?.ts;
           }else{
             value = payload;
           }
@@ -274,10 +270,12 @@ var self = module.exports = {
           const data = {
             object,
             value,
-            error
+            error,
+            timestamp
           }
 
-          await $.db_sensor.insert(logs_table,device.id,res.id,data);
+          $.db_sensor.insert(logs_table,device.id,res.id,data);
+          return;
         }
       }
     }
