@@ -35,176 +35,49 @@ var self = module.exports = {
 
   parseMessage : async (client,topic,payload,retain)=>{
 
+    let topic_bck = topic;
+    let project_name = null;
+    let project = null;
+    let project_id = null;
+    let action = null;
+    let uid = null;
+    let device = null;
+
     try{
       payload = JSON.parse(payload)
     }catch(err){};
     
-    let topic_bck = topic;
-
-    //let index = topic.indexOf(MACRO_UID_PREFIX);
     // --- project ---
-    let index = topic.indexOf("/");
-    if(index == -1)
-        return;
-
-    let project_name = topic.substring(0,index);
-    let project = await $.db_project.getByName(project_name);
-
+    project_name = getFirstWord(topic);
+    project = await $.db_project.getByName(project_name);
     if(project == null)
       return;
-    
-    let project_id = project?.id;
+
+    project_id = project?.id;
+    topic = getWordAfterSlash(topic)
+
+    // check if is from lwm2m gw
+    if(topic.startsWith("responses") || topic.startsWith("requests")){
+      action = getFirstWord(topic);
+      topic = getWordAfterSlash(topic);
+    }
 
     // --- uid ---
-    topic = topic.substring(index+1);
-    index = topic.indexOf("/");
-    if(index == -1)
-        return;
-
-    let uid = topic.substring(0,index);
-    topic = topic.substring(index+1);
-
+    uid = getFirstWord(topic);
     // check if topic corresponds to a device
-    if(uid.startsWith(project.uidPrefix) && uid.length <= project?.uidLength){
+    if(!uid.startsWith(project.uidPrefix) || uid.length > project?.uidLength)
+      return;
 
-      let device = await $.db_device.get(uid);
+    device = await $.db_device.get(uid);
+    if(!device)
+      return;
 
-      // Insert device if not exists on db
-      if(device == null){
-        let obj = {
-          uid : uid,
-          accept_release : "prod",
-        }
-        $.db_device.insert(obj)
-        .then(async()=>{
-          device = await $.db_device.get(uid);
-        })
-        .catch( (err) => {});
-      }
+    topic = getWordAfterSlash(topic);
 
-      // update project id if needed
-      if(project_id != null && project_id != device?.project_id){
-        $.db_device.update(device.id,"project_id",project_id);
-        $.db_device.addLog(device.id,"project_id",project_id);
-      } 
-
-      switch (topic) {
-        case "status":
-          if (payload === "online" || payload === "offline") {
-            await $.db_device.update(device.id, "status", payload);
-            $.db_device.addLog(device.id,"status",payload);
-          }
-          break;
-        case "model":
-          let res = await $.db_model.getByName(payload);
-          let model_id = res?.id;
-          if (model_id != null && device?.tech != payload) {
-            await $.db_device.update(device.id, "model_id", model_id);
-            $.db_device.addLog(device.id,"model_id",model_id);
-          }
-          break;
-        case "tech":
-          if (device?.tech && payload != device.tech) {
-            await $.db_device.update(device.id, "tech", payload);
-            $.db_device.addLog(device.id,"tech",payload);
-          }
-          break;
-        case "version":
-          if (device?.version && payload != device.version) {
-            $.db_device.addLog(device.id,"version",payload);
-            await $.db_device.update(device.id, "version", payload);
-            await self.handleFotaSuccess(device.id);
-          }
-          break;
-        case "app_version":
-          if (device?.app_version && payload != device.app_version) {
-            $.db_device.addLog(device.id,"app_version",payload);
-            await $.db_device.update(device.id, "app_version", payload);
-            await self.handleFotaSuccess(device.id);
-          }
-          break;
-        case "fw/fota/update/status":
-          await self.handleFotaError(device.id, payload);
-          break;
-        // Optional: default case if needed
-        default:
-          // handle other topics or do nothing
-          break;
-      }
-
-      if(topic.startsWith("settings/") && topic.endsWith("/set") && payload != "" ){
-        // update local settings
-        let index = topic.indexOf("settings/");
-        topic = topic.substring(index+9);
-        self.updateLocalSettings(device,topic,payload);
-      }else if(topic.startsWith("settings/") && !topic.endsWith("/set") && payload != "" ){
-        // store remote device settings
-        let index = topic.indexOf("settings/");
-        topic = topic.substring(index+9);
-        self.updateRemoteSettings(device,topic,payload);
-      }else if(topic == "fw"){
-        try{
-          payload = JSON.parse(payload);
-        }catch(error){}
-        if(typeof payload === 'object' && payload !== null){
-          try{
-            $.db_data.updateJson("fw",device.id,payload);
-            $.db_data.addJsonLog("logs_fw",device.id,payload);
-          }catch(error){
-            console.error(error)
-          } 
-        }else if(typeof payload !== 'object' && payload !== null){
-          // change it to topic.startsWith("fw")
-          try{
-            const column = getWordAfterLastSlash(topic);
-            $.db_data.update("fw",device.id,column,payload);
-            $.db_data.addLog("logs_fw",device.id,column,payload);
-          }catch(error){
-            console.error(error)
-          } 
-        }
-      }else if(topic.startsWith("sensor/")){
-        //updateSensor(device,topic,payload)
-        index = topic.indexOf("/");
-        if(index != -1){
-          const ref = topic.substring(index+1);
-          let res = await $.db_device.getSensorByRef(device.id,ref)
-          if(res == null)
-            res = await $.db_model.getSensorByRef(device.model_id,ref)
-          if(res != null){
-            object = null;
-            value = null;
-            error = null;
-            try{
-              object = JSON.parse(payload);
-            }catch(err){
-              console.log(payload)
-              console.log(err);
-            }
-            if (typeof object === 'object' && object !== null) {
-              value = object?.value;
-              error = object?.error;
-            }else{
-              value = payload;
-            }
-
-            if(value || error)
-              object = null;
-
-            const data = {
-              object,
-              value,
-              error
-            }
-
-            await $.db_sensor.insert(logs_table,device.id,res.id,data);
-          }
-        }
-      }
-
-      if(_project[project_name]){
-        _project[project_name]?.module?.parseMessage(client,project_name,device,topic,payload,retain,()=>{});
-      }
+    if(device.protocol.toLowerCase() === "lwm2m"){
+      parseLwm2mMessage(client, project_name, device, topic, payload, action);
+    }else if(device.protocol.toLowerCase() === "mqtt"){
+      parseMqttMessage(client, project_name, device, topic, payload, retain);
     }
 
   },
@@ -224,118 +97,6 @@ var self = module.exports = {
         time = Math.floor(process.uptime()) - uptimeSeconds;
         console.log(`Logs of table ${tableName} deleted in ${time}s`);
       }
-    }
-  },
-
-  updateLocalSettings: async (device, topic, payload) => {
-
-    $.db_device.addLog(device.id,"local_settings",JSON.stringify(payload));
-
-    let route = topic.split("/");
-
-    if (route == null || route.length == 0) {
-      console.warn("updateLocalSettings: topic invalid:", topic);
-      return;
-    }
-
-    // Retrieve existing settings
-    let settings = await $.db_device.getLocalSettings(device.id);
-
-    if (!settings || typeof settings !== 'object') {
-      settings = {};
-    }
-
-    let obj = settings;
-
-    // Traverse route parts to reach the target object
-    route.slice(0, -1).forEach(property => {
-      if (
-        !Object.prototype.hasOwnProperty.call(obj, property) ||
-        (obj.hasOwnProperty(property) && typeof obj[property] !== 'object') ||
-        obj[property] === null
-      ) {
-        obj[property] = {}; // Create nested object if missing or not an object
-      }
-      obj = obj[property];
-    });
-
-    // Parse the payload JSON
-    let data = {};
-    try {
-      data = JSON.parse(payload);
-    } catch (error) {
-      console.error("Failed to parse payload JSON:", error);
-      return;
-    }
-
-    // Check if the data is a plain object, then merge
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      Object.assign(obj, data);
-    } else {
-      console.warn("Payload is not a valid object:", payload);
-      return;
-    }
-
-    try {
-      // Update the settings in the database
-      await $.db_device.updateLocalSettings(JSON.stringify(settings), device.id);
-    } catch (err) {
-      console.error("Failed to update local settings:", err);
-    }
-  },
-
-  updateRemoteSettings : async (device,topic,payload)=>{
-
-    $.db_device.addLog(device.id,"remote_settings",JSON.stringify(payload));
-
-    let route = topic.split("/");
-
-    if(route == null){
-      console.warn("updateRemoteSettings: topic invalid:",topic);
-      return;
-    }
-    // Parse existing settings
-    let settings = await $.db_device.getRemoteSettings(device.id);
-
-    if (!settings || typeof settings !== 'object') {
-      settings = {};
-    }
-
-    let obj = settings;
-
-    // Traverse route parts
-    route.slice(0, route.length).forEach(property => {
-      if (
-        !Object.prototype.hasOwnProperty.call(obj, property) ||
-        (obj.hasOwnProperty(property) && typeof obj[property] !== 'object') ||
-        obj[property] === null
-      ) {
-        obj[property] = {}; // create nested object if missing or not an object
-      }
-      obj = obj[property];
-    });
-
-    // Merge payload into nested object
-    let data = {};
-    try {
-      data = JSON.parse(payload);
-    } catch(error) {
-    }
-
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      // Merge data properties
-      for (const [key, value] of Object.entries(data)) {
-        obj[key] = value;
-      }
-    } else {
-      // payload isn't an object, replace the nested object
-      obj = payload;
-    }
-
-    try {
-      await $.db_device.updateRemoteSettings(JSON.stringify(settings), device.id);
-    } catch (err) {
-      console.error("Failed to update local settings:", err);
     }
   },
 
@@ -485,25 +246,310 @@ var self = module.exports = {
     }
   },
 
-  handleFotaSuccess : async (deviceId) => {
-    let object = {
-      "nAttempts" : 0,
-      "fUpdate" : 0,
-    }
-    await $.db_fota.update(deviceId,object);
-    object = {
-      success : 1,
-    }
-    await $.db_fota.updateLog(deviceId,object);
-  },
+}
 
-  handleFotaError : async (deviceId, error) => {
-    let object = {
-      error : error,
-    }
-    await $.db_fota.updateLog(deviceId,object);
+async function parseLwm2mMessage(client, project_name, device, topic, payload, action){
+
+  console.log("parse lwm2m message: ",topic);
+
+  try{
+    payload = JSON.parse(payload);
+  }catch(error){}
+
+  let word = getFirstWord(topic);
+  topic = getWordAfterSlash(topic);
+
+  switch (word) {
+    case "status":
+      if (payload === "online" || payload === "offline") {
+        $.db_device.update(device.id, "status", payload);
+        $.db_device.addLog(device.id,"status",payload);
+      }
+      return;
+      break;
+    case "sensor":
+      updateSensor(device,topic,payload)
+  }
+
+  if(_project[project_name]){
+    _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,action,()=>{});
   }
 }
 
+async function parseMqttMessage(client, project_name, device, topic, payload, retain){
 
+  if(topic.endsWith("/get"))
+    return;
 
+  //console.log("[MQTT] parse topic: ",topic);
+
+  try{
+    payload = JSON.parse(payload);
+  }catch(error){}
+
+  let word = getFirstWord(topic);
+  topic = getWordAfterSlash(topic);
+
+  switch (word) {
+    case "status":
+      if (payload === "online" || payload === "offline") {
+        $.db_device.update(device.id, "status", payload);
+        $.db_device.addLog(device.id,"status",payload);
+      }
+      return;
+      break;
+    case "model":
+      let res = await $.db_model.getByName(payload);
+      let model_id = res?.id;
+      if (model_id != null && device?.tech != payload) {
+        $.db_device.update(device.id, "model_id", model_id);
+        $.db_device.addLog(device.id,"model_id",model_id);
+      }
+      return;
+      break;
+    case "tech":
+      if (device?.tech && payload != device.tech) {
+        $.db_device.update(device.id, "tech", payload);
+        $.db_device.addLog(device.id,"tech",payload);
+      }
+      return;
+      break;
+    case "version":
+      if (device?.version && payload != device.version) {
+        $.db_device.addLog(device.id,"version",payload);
+        $.db_device.update(device.id, "version", payload);
+        handleFotaSuccess(device.id);
+      }
+      return;
+      break;
+    case "app_version":
+      if (device?.app_version && payload != device.app_version) {
+        $.db_device.addLog(device.id,"app_version",payload);
+        $.db_device.update(device.id, "app_version", payload);
+        handleFotaSuccess(device.id);
+      }
+      return;
+      break;
+    case "fw":
+      if(topic === "fota/update/status"){
+        handleFotaError(device.id, payload);
+      }else{
+        if(typeof payload === 'object' && payload !== null){
+          try{
+            let rows = await $.db_data.updateJson("fw",device.id,payload);
+            rows = await $.db_data.addJsonLog("logs_fw",device.id,payload);
+          }catch(error){
+            console.error(error)
+          } 
+        }else if(typeof payload !== 'object' && payload !== null){
+          // change it to topic.startsWith("fw")
+          try{
+            const column = getWordAfterLastSlash(topic);
+            let rows = await $.db_data.update("fw",device.id,column,payload);
+            rows = await $.db_data.addLog("logs_fw",device.id,column,payload);
+          }catch(error){
+            console.error(error)
+          } 
+        }
+      }
+      return;
+      break;
+    case "settings":
+      if(topic.endsWith("/set")){
+        updateLocalSettings(device,topic,payload);
+      }else{
+        updateRemoteSettings(device,topic,payload);
+      }
+      return;
+      break;
+    case "sensor":
+      let ref = getFirstWord(topic)
+      updateSensor(device,ref,payload)
+      return;
+      break;
+    // Optional: default case if needed
+    default:
+      // handle other topics or do nothing
+      break;
+  }
+
+  if(_project[project_name]){
+    _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,retain,()=>{});
+  }
+}
+
+async function updateLocalSettings(device, topic, payload){
+
+  $.db_device.addLog(device.id,"local_settings",JSON.stringify(payload));
+
+  let route = topic.split("/");
+
+  if (route == null || route.length == 0) {
+    console.warn("updateLocalSettings: topic invalid:", topic);
+    return;
+  }
+
+  // Retrieve existing settings
+  let settings = await $.db_device.getLocalSettings(device.id);
+
+  if (!settings || typeof settings !== 'object') {
+    settings = {};
+  }
+
+  let obj = settings;
+
+  // Traverse route parts to reach the target object
+  route.slice(0, -1).forEach(property => {
+    if (
+      !Object.prototype.hasOwnProperty.call(obj, property) ||
+      (obj.hasOwnProperty(property) && typeof obj[property] !== 'object') ||
+      obj[property] === null
+    ) {
+      obj[property] = {}; // Create nested object if missing or not an object
+    }
+    obj = obj[property];
+  });
+
+  // Check if the data is a plain object, then merge
+  if (typeof payload === 'object' && !Array.isArray(payload)) {
+    Object.assign(obj, payload);
+  } else {
+    console.warn("Payload is not a valid object:", payload);
+    return;
+  }
+
+  try {
+    // Update the settings in the database
+    await $.db_device.updateLocalSettings(JSON.stringify(settings), device.id);
+  } catch (err) {
+    console.error("Failed to update local settings:", err);
+  }
+}
+
+async function updateRemoteSettings(device,topic,payload){
+
+  $.db_device.addLog(device.id,"remote_settings",JSON.stringify(payload));
+
+  let route = topic.split("/");
+
+  if(route == null){
+    console.warn("updateRemoteSettings: topic invalid:",topic);
+    return;
+  }
+  // Parse existing settings
+  let settings = await $.db_device.getRemoteSettings(device.id);
+
+  if (!settings || typeof settings !== 'object') {
+    settings = {};
+  }
+
+  let obj = settings;
+
+  // Traverse route parts
+  route.slice(0, route.length).forEach(property => {
+    if (
+      !Object.prototype.hasOwnProperty.call(obj, property) ||
+      (obj.hasOwnProperty(property) && typeof obj[property] !== 'object') ||
+      obj[property] === null
+    ) {
+      obj[property] = {}; // create nested object if missing or not an object
+    }
+    obj = obj[property];
+  });
+
+  if (typeof payload === 'object' && !Array.isArray(payload)) {
+    // Merge payload properties
+    for (const [key, value] of Object.entries(payload)) {
+      obj[key] = value;
+    }
+  } else {
+    // payload isn't an object, replace the nested object
+    obj = payload;
+  }
+
+  try {
+    await $.db_device.updateRemoteSettings(JSON.stringify(settings), device.id);
+  } catch (err) {
+    console.error("Failed to update local settings:", err);
+  }
+}
+
+async function updateSensor(device,ref,payload){
+  let res = await $.db_device.getSensorByRef(device.id,ref)
+  if(res == null)
+    res = await $.db_model.getSensorByRef(device.model_id,ref)
+  if(res == null)
+    return;
+
+  object = payload;
+  value = null;
+  error = null;
+  timestamp = null;
+
+  if (typeof object === 'object' && object !== null) {
+    value = object?.value || object?.v;
+    error = object?.error || object?.e;
+    timestamp = object?.timestamp || objects?.ts;
+  }else{
+    value = payload;
+  }
+
+  if(value || error)
+    object = null;
+
+  const data = {
+    object,
+    value,
+    error,
+    timestamp
+  }
+
+  $.db_sensor.insert(logs_table,device.id,res.id,data);
+  return;
+}
+
+function handleFotaSuccess (deviceId){
+  let object = {
+    "nAttempts" : 0,
+    "fUpdate" : 0,
+  }
+  $.db_fota.update(deviceId,object);
+  object = {
+    success : 1,
+  }
+  $.db_fota.updateLog(deviceId,object);
+}
+
+function handleFotaError (deviceId, error){
+  let object = {
+    error : error,
+  }
+  $.db_fota.updateLog(deviceId,object);
+}
+
+function getFirstWord(str){
+  const slashIndex = str.indexOf('/');
+  if (slashIndex === -1) {
+    // No slash found, return the original string
+    return str;
+  }
+  return str.substring(0,slashIndex);
+}
+
+function getWordAfterSlash(str){
+  const slashIndex = str.indexOf('/');
+  if (slashIndex === -1) {
+    // No slash found, return empty string
+    return "";
+  }
+  return str.substring(slashIndex + 1);
+}
+
+function getWordAfterLastSlash(str){
+  const lastSlashIndex = str.lastIndexOf('/');
+  if (lastSlashIndex === -1) {
+    // No slash found, return the original string
+    return str;
+  }
+  return str.substring(lastSlashIndex + 1);
+}

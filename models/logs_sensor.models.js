@@ -30,6 +30,10 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true,
 		},
+		localUnixTs: {
+			type: DataTypes.BIGINT,
+			allowNull: true,
+		}
 	},
 	{
 		tableName: 'logs_sensor',
