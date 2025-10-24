@@ -530,7 +530,7 @@ function handleFotaError (deviceId, error){
 function getFirstWord(str){
   const slashIndex = str.indexOf('/');
   if (slashIndex === -1) {
-    // No slash found, return the original string or empty
+    // No slash found, return the original string
     return str;
   }
   return str.substring(0,slashIndex);
@@ -539,7 +539,7 @@ function getFirstWord(str){
 function getWordAfterSlash(str){
   const slashIndex = str.indexOf('/');
   if (slashIndex === -1) {
-    // No slash found, return the original string or empty
+    // No slash found, return empty string
     return "";
   }
   return str.substring(slashIndex + 1);
