@@ -17,9 +17,12 @@ var self = module.exports = {
 
         console.log("[Kafka] Initializing consumer...");
 
+        // Generate a random 6-digit number
+        const randomNumber = Math.floor(100000 + Math.random() * 900000);
+        
         // Build Kafka configuration
         const kafkaConfig = {
-          clientId: config.kafka.clientId,
+          clientId: `${config.kafka.clientId}${randomNumber}`,
           brokers: config.kafka.brokers,
           connectionTimeout: config.kafka.connectionTimeout,
           requestTimeout: config.kafka.requestTimeout,
