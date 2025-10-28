@@ -14,7 +14,6 @@ module.exports = {
     pwd:process.env.MQTT_PWD || 'admin',
     client:process.env.MQTT_CLIENT || 'mqtt-devices-parser',
     logs_path: process.env.MQTT_LOGS || 'uServices',
-    parseMessages: process.env.MQTT_PARSE_MESSAGES !== 'false' // Default to true for backward compatibility
   },
   kafka: {
     enabled: process.env.KAFKA_ENABLED === 'true' ? true : true,

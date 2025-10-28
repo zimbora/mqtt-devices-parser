@@ -28,8 +28,6 @@ const configWithKafka = {
     user: 'admin',
     pwd: 'admin',
     client: 'mqtt-devices-parser-example',
-    logs_path: 'uServices',
-    parseMessages: true // Set to false to disable MQTT message parsing
   },
   kafka: {
     enabled: true, // Enable Kafka consumer
@@ -74,7 +72,6 @@ const configMQTTOnly = {
   },
   mqtt: {
     ...configWithKafka.mqtt,
-    parseMessages: true // Keep MQTT parsing enabled
   }
 };
 
@@ -87,7 +84,6 @@ const configKafkaOnly = {
   },
   mqtt: {
     ...configWithKafka.mqtt,
-    parseMessages: false // Disable MQTT parsing
   }
 };
 
@@ -118,7 +114,6 @@ async function runExample() {
     const selectedConfig = configWithKafka; // Change this to test different modes
     
     console.log('Configuration mode:');
-    console.log('- MQTT parsing enabled:', selectedConfig.mqtt.parseMessages);
     console.log('- Kafka consumer enabled:', selectedConfig.kafka.enabled);
     console.log('- Projects:', projects.join(', '));
     console.log();
@@ -147,7 +142,7 @@ async function runExample() {
       console.log();
     }
     
-    if (selectedConfig.mqtt.parseMessages) {
+    if (!selectedConfig.kafka.enabled) {
       console.log('MQTT client is connected and parsing messages');
       console.log('Subscribed to MQTT topics:', projects.map(p => p + '/#').join(', '));
       console.log();

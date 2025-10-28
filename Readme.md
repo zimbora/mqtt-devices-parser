@@ -26,7 +26,7 @@
 
 - mysql8.0
 - MQTT
-- **NEW**: Apache Kafka (optional)
+- **NEW**: Confluentic Kafka (optional)
 
 ## Front end
 - Node service running the following [project](https://github.com/zimbora/mgmt-iot-web)
@@ -58,7 +58,7 @@ The module now supports consuming messages from Kafka topics as an alternative o
 - `KAFKA_SASL_PASSWORD` - SASL password (default: empty)
 
 **Security:**
-- `KAFKA_SSL` - Set to `'true'` to enable SSL (default: `false`)
+- `KAFKA_SSL_ENABLED` - Set to `'true'` to enable SSL (default: `false`)
 
 **Connection Settings:**
 - `KAFKA_CONNECTION_TIMEOUT` - Connection timeout in ms (default: `3000`)
@@ -69,29 +69,58 @@ The module now supports consuming messages from Kafka topics as an alternative o
 
 #### Usage Examples
 
-**Example 1: Enable Kafka with basic authentication**
+**Example 1: Use Kafka with SSL and SCRAM-SHA-256 authentication - Most Secure**
 ```bash
-export KAFKA_ENABLED=true
+export KAFKA_SSL_ENABLED=true
+export KAFKA_SSL_CERTFILE='./certs/ca.cert'
+export KAFKA_SSL_REJECT_UNAUTHORIZED=true
+export KAFKA_BROKERS=kafka1:9092,kafka2:9092
+export KAFKA_SASL_USERNAME=myuser
+export KAFKA_SASL_PASSWORD=mypassword
+export KAFKA_SASL_MECHANISM=scram-sha-256
+```
+**Example 2: Use Kafka with SSL No trust and SCRAM-SHA-256 authentication.
+Prone to MITM attacks**
+```bash
+export KAFKA_SSL_ENABLED=true
+export KAFKA_SSL_CERTFILE=''
+export KAFKA_SSL_REJECT_UNAUTHORIZED=false
+export KAFKA_BROKERS=kafka1:9092,kafka2:9092
+export KAFKA_SASL_USERNAME=myuser
+export KAFKA_SASL_PASSWORD=mypassword
+export KAFKA_SASL_MECHANISM=scram-sha-256
+```
+**Example 3: Use Kafka without SSL and SCRAM-SHA-256 authentication. Basic authentication with no encryption. Credentials are not shared**
+```bash
+export KAFKA_SSL_ENABLED=false
+export KAFKA_SSL_CERTFILE=''
+export KAFKA_SSL_REJECT_UNAUTHORIZED=true
 export KAFKA_BROKERS=kafka1:9092,kafka2:9092
 export KAFKA_SASL_USERNAME=myuser
 export KAFKA_SASL_PASSWORD=mypassword
 export KAFKA_SASL_MECHANISM=scram-sha-256
 ```
 
-**Example 2: Use Kafka only (disable MQTT parsing)**
+**Example 4: Use KAFKA without authentication. Not secure at all**
 ```bash
 export KAFKA_ENABLED=true
-export MQTT_PARSE_MESSAGES=false
-export KAFKA_BROKERS=kafka-cluster:9092
+export KAFKA_SSL_ENABLED=false
+export KAFKA_SASL_USERNAME=''
+export KAFKA_SASL_PASSWORD=''
 ```
 
-**Example 3: Multi-process deployment**
+**Example 5: KAFKA Multi-process deployment**
 ```bash
 # Start multiple instances with the same group ID for load balancing
 export KAFKA_ENABLED=true
 export KAFKA_GROUP_ID=my-parser-group
 export KAFKA_BROKERS=kafka1:9092,kafka2:9092
 # Each process will consume different partitions automatically
+```
+
+**Example 6: Use MQTT only (disable KAFKA parsing)**
+```bash
+export KAFKA_ENABLED=false
 ```
 
 #### Kafka Topic Structure

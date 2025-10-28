@@ -30,20 +30,30 @@ var self = module.exports = {
           logLevel: logLevel.INFO
         };
 
-        if(config.kafka.ssl){
-          kafkaConfig.ssl = {
-            ca: [fs.readFileSync(config.kafka.ssl.file, 'utf8')],
-            rejectUnauthorized: config.kafka.ssl.rejectUnauthorized
+        if(config.kafka.ssl.enabled === true){
+          console.log("[Kafka] Try to establish SSL connection..");
+          if(config.kafka.ssl.rejectUnauthorized){
+            // check certificate. Most secure
+            kafkaConfig.ssl = {
+              ca: [fs.readFileSync(config.kafka.ssl.file, 'utf8')],
+              rejectUnauthorized: config.kafka.ssl.rejectUnauthorized
+            }
+           }else{
+            // trust certificate. Prone to MITM attacks
+            kafkaConfig.ssl = {
+              rejectUnauthorized: config.kafka.ssl.rejectUnauthorized
+            }
           }
-          // Add SASL authentication if credentials provided
-          if (config.kafka.sasl.username && config.kafka.sasl.password) {
-            
-            kafkaConfig.sasl = {
-              mechanism: config.kafka.sasl.mechanism,
-              username: config.kafka.sasl.username,
-              password: config.kafka.sasl.password
-            };
-          }
+        }
+
+        // Add SASL authentication if credentials provided
+        if (config.kafka.sasl.username && config.kafka.sasl.password) {
+          console.log("[Kafka] SASL: username and password are defined");
+          kafkaConfig.sasl = {
+            mechanism: config.kafka.sasl.mechanism,
+            username: config.kafka.sasl.username,
+            password: config.kafka.sasl.password
+          };
         }
 
         kafka = new Kafka(kafkaConfig);

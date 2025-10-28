@@ -16,7 +16,6 @@ async function testConfigurationValues() {
   console.log('\n=== Testing Configuration Values ===');
   
   // Test default values
-  console.log('Default MQTT parseMessages:', $.config.mqtt.parseMessages);
   console.log('Default Kafka enabled:', $.config.kafka.enabled);
   console.log('Default Kafka brokers:', $.config.kafka.brokers);
   console.log('Default Kafka groupId:', $.config.kafka.groupId);
@@ -36,7 +35,6 @@ async function testConfigurationValues() {
   const newConfig = require(__dirname + path + '/config');
   
   console.log('\nWith environment variables:');
-  console.log('MQTT parseMessages:', newConfig.mqtt.parseMessages);
   console.log('Kafka enabled:', newConfig.kafka.enabled);
   console.log('Kafka brokers:', newConfig.kafka.brokers);
   console.log('Kafka groupId:', newConfig.kafka.groupId);
@@ -78,19 +76,19 @@ async function testMQTTMessageParsing() {
   
   // Test the logic that would be used in index.js
   const testConfigs = [
-    { mqtt: { parseMessages: true } },
-    { mqtt: { parseMessages: false } }
+    { kafka: { enabled: true } },
+    { kafka: { enabled: false } }
   ];
   
   for (const config of testConfigs) {
-    console.log(`\nTesting with parseMessages: ${config.mqtt.parseMessages}`);
+    console.log(`\nTesting with kafka parseMessages: ${config.kafka.enabled}`);
     
     // Simulate the MQTT message handler logic
     const mockTopic = "test/uid:123/status";
     const mockPayload = "online";
     const mockPacket = { retain: false };
     
-    if (config.mqtt.parseMessages) {
+    if (!config.kafka.enabled) {
       console.log('Would call device.parseMessage');
       await $.device.parseMessage(null, mockTopic, mockPayload, mockPacket.retain);
     } else {

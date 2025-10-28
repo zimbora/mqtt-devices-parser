@@ -47,7 +47,6 @@ async function testKafkaConsumerInit() {
 async function testConfiguration() {
   console.log('\n=== Testing Configuration ===');
   
-  console.log('MQTT parseMessages:', $.config.mqtt.parseMessages);
   console.log('Kafka enabled:', $.config.kafka.enabled);
   console.log('Kafka brokers:', $.config.kafka.brokers);
   console.log('Kafka groupId:', $.config.kafka.groupId);
