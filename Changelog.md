@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.22
+	Adds SSL and SASL support for kafka
+		mqtt.parseMessages removed
+	src/kafka/consumer: adds random number to kafka client Id
+	Parse mqtt lwm2m (#6)
+		* in progress: splits parsing messages base on protocol
+		* supports local unix timestamp, fix sensor data parse
+		models/logs_sensor.models: add localUnixTs
+		src/devices/device: fix object parse
+		* fix: mqtt parser
+		Re-structs parser
+
 ## 1.0.21
 	src/kafka/consumer: fixes parseMessage call
 	improves: logs
