@@ -1,4 +1,5 @@
 const { Kafka, logLevel } = require('kafkajs');
+const fs = require('fs');
 
 var kafka = null;
 var consumer = null;
@@ -29,18 +30,20 @@ var self = module.exports = {
           logLevel: logLevel.INFO
         };
 
-        // Add SASL authentication if credentials provided
-        if (config.kafka.sasl.username && config.kafka.sasl.password) {
-          kafkaConfig.sasl = {
-            mechanism: config.kafka.sasl.mechanism,
-            username: config.kafka.sasl.username,
-            password: config.kafka.sasl.password
-          };
-        }
-
-        // Add SSL configuration if enabled
-        if (config.kafka.ssl) {
-          kafkaConfig.ssl = true;
+        if(config.kafka.ssl){
+          kafkaConfig.ssl = {
+            ca: [fs.readFileSync(config.kafka.ssl.file, 'utf8')],
+            rejectUnauthorized: config.kafka.ssl.rejectUnauthorized
+          }
+          // Add SASL authentication if credentials provided
+          if (config.kafka.sasl.username && config.kafka.sasl.password) {
+            
+            kafkaConfig.sasl = {
+              mechanism: config.kafka.sasl.mechanism,
+              username: config.kafka.sasl.username,
+              password: config.kafka.sasl.password
+            };
+          }
         }
 
         kafka = new Kafka(kafkaConfig);

@@ -21,12 +21,16 @@ module.exports = {
     brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
     groupId: process.env.KAFKA_GROUP_ID || 'mqtt-devices-parser-group',
     clientId: process.env.KAFKA_CLIENT_ID || 'mqtt-devices-parser',
+    ssl: {
+      enabled : process.env.KAFKA_SSL_ENABLED || false,
+      file: process.env.KAFKA_SSL_CERTFILE || './certs/kafka.crt',
+      rejectUnauthorized: process.env.KAFKA_SSL_REJECT_UNAUTHORIZED || true, // set to false to accept unstrusted certs
+    },
     sasl: {
       mechanism: process.env.KAFKA_SASL_MECHANISM || 'plain', // plain, scram-sha-256, scram-sha-512
       username: process.env.KAFKA_SASL_USERNAME || '',
       password: process.env.KAFKA_SASL_PASSWORD || ''
     },
-    ssl: process.env.KAFKA_SSL === 'true' ? true : false,
     connectionTimeout: parseInt(process.env.KAFKA_CONNECTION_TIMEOUT) || 3000,
     requestTimeout: parseInt(process.env.KAFKA_REQUEST_TIMEOUT) || 30000
   },
