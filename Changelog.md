@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.23
+	src/device/device: fix tech, version and app_version db update
+	npm warn audit Updating websocket-stream to 5.3.0, which is a SemVer major change.
+
 ## 1.0.22
 	Adds SSL and SASL support for kafka
 		mqtt.parseMessages removed
