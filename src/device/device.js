@@ -308,14 +308,14 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       return;
       break;
     case "tech":
-      if (device?.tech && payload != device.tech) {
+      if (payload != null && payload != device?.tech) {
         $.db_device.update(device.id, "tech", payload);
         $.db_device.addLog(device.id,"tech",payload);
       }
       return;
       break;
     case "version":
-      if (device?.version && payload != device.version) {
+      if (payload != null && payload != device?.version) {
         $.db_device.addLog(device.id,"version",payload);
         $.db_device.update(device.id, "version", payload);
         handleFotaSuccess(device.id);
@@ -323,7 +323,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       return;
       break;
     case "app_version":
-      if (device?.app_version && payload != device.app_version) {
+      if (payload != null && payload != device?.app_version) {
         $.db_device.addLog(device.id,"app_version",payload);
         $.db_device.update(device.id, "app_version", payload);
         handleFotaSuccess(device.id);
