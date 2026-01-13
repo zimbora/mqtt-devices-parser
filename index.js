@@ -174,7 +174,7 @@ function mqtt_connect(){
         $.mqtt_client.subscribe(project+"/#", (err) => {
           if(err){
             console.log("[MQTT] error");
-            console.err(err);
+            console.error(err);
           }
           else
             console.log("[MQTT] subscribed to project:",project);
@@ -230,6 +230,6 @@ function mqtt_connect(){
 
   $.mqtt_client.on("error",(error)=>{
     console.log("[MQTT] error");
-    console.err(error)
+    console.error(error)
   })
 }
