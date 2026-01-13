@@ -69,7 +69,7 @@ var self = module.exports = {
           maxBytes: 10485760,
           maxWaitTimeInMs: 5000,
           retry: {
-            initialRetryTime: 100,
+            initialRetryTime: 300,
             retries: 8
           }
         });
