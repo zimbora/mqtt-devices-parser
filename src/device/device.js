@@ -296,6 +296,31 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "status", payload);
         $.db_device.addLog(device.id,"status",payload);
       }
+
+      if (payload === "online"){
+        let mqtt_prefix = `${project_name}/${device.uid}`;
+        // check if remote settings are known, if not require it
+        if(!device.remote_settings?.log){
+          let topic = `${mqtt_prefix}/settings/log/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
+        if(!device.remote_settings?.keepalive){
+          let topic = `${mqtt_prefix}/settings/keepalive/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
+        if(!device.remote_settings?.modem){
+          let topic = `${mqtt_prefix}/settings/modem/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
+        if(!device.remote_settings?.wifi){
+          let topic = `${mqtt_prefix}/settings/wifi/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
+        if(!device.remote_settings?.mqtt){
+          let topic = `${mqtt_prefix}/settings/mqtt/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
+      }
       return;
       break;
     case "model":
