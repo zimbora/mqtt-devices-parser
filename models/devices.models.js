@@ -71,6 +71,11 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
+		synch: { // set to 1 to enable auto synch
+			type: DataTypes.INTEGER,
+			default: 0,
+			allowNull: true
+		}
 	},
 	{
 		tableName: 'devices',
