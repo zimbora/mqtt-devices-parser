@@ -1,4 +1,5 @@
 const moment = require('moment');
+const { isDeepStrictEqual } = require('node:util');
 
 var _project = [];
 const logs_table = "logs_sensor";
@@ -494,9 +495,40 @@ async function updateRemoteSettings(device,topic,payload){
 
   try {
     await $.db_device.updateRemoteSettings(JSON.stringify(settings), device.id);
+    if(device?.synch)
+      synchSettings(device,route[0]);
   } catch (err) {
     console.error("Failed to update local settings:", err);
   }
+}
+
+async function synchSettings(device,key){
+
+  console.log(`check topic ${key} from ${device.uid}`);
+  // Retrieve existing settings
+  let localSettings = await $.db_device.getLocalSettings(device.id);
+  console.log(localSettings)
+  let remoteSettings = await $.db_device.getRemoteSettings(device.id);
+  console.log(remoteSettings)
+
+  //let keys = await checkSettings(localSettings,remoteSettings);
+  if(localSettings?.hasOwnProperty(key) && remoteSettings?.hasOwnProperty(key)){
+    if(!isDeepStrictEqual(localSettings?.[key], remoteSettings?.[key])){
+      const project = await $.db_project.getById(device.project_id);
+      let mqtt_prefix = `${project.name}/${device.uid}`;
+      let topic = `${mqtt_prefix}/settings/${key}/set`
+      try{
+        const payload = JSON.stringify(localSettings[key]);
+        console.log(`updating key: ${key} with data:`);
+        console.log(payload);
+        $.mqtt_client.publish(topic,payload,{qos:1,retain:false});
+      }catch(err){
+        console.error(localSettings[key])
+        console.error(err);
+      }
+    }
+  }
+
 }
 
 async function updateSensor(device,ref,payload){
