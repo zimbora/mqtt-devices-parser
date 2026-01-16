@@ -282,6 +282,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   if(topic.endsWith("/get"))
     return;
 
+  const topicBck = topic;
   //console.log("[MQTT] parse topic: ",topic);
 
   try{
@@ -396,6 +397,45 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
     // Optional: default case if needed
     default:
       // handle other topics or do nothing
+      // check if topic is associated with device
+      let findTopic = topicBck;
+      if(topicBck.endsWith("/set")) // remove set if exists on topic
+        findTopic = getWordBeforeLastSlash(topicBck);
+
+      const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
+      if(dbTopic != null){
+        if(topicBck.endsWith("/set")){
+          // update local topic
+          $.db_device.updateLocalTopic(dbTopic.id,payload)
+          .then(()=>{
+            // set as not synched
+            $.db_device.setSynchedTopic(dbTopic.id,false);
+          })
+          .catch((error)=>{
+            console.error(error);
+          })
+        }else{
+          // update remote topic
+          $.db_device.updateRemoteTopic(dbTopic.id,payload)
+          .then(async (res)=>{
+            // check if topics mismatch
+            if(isDeepStrictEqual(dbTopic?.localData, dbTopic?.remoteData)){
+              $.db_device.setSynchedTopic(dbTopic.id,true);
+            }else{
+              // set as not synched
+              await $.db_device.setSynchedTopic(dbTopic.id,false);
+              if(dbTopic?.synch){ // check if sync is enabled
+                // synch topic
+                synchMqttTopic(device,dbTopic,findTopic);
+              }
+            }
+          })
+          .catch((error)=>{
+            console.error(error);
+          })
+
+        }
+      }
       break;
   }
 
@@ -404,7 +444,26 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   }
 }
 
-async function updateLocalSettings(device, topic, payload){
+async function synchMqttTopic(device,dbTopic,topicBck){
+  
+  const project = await $.db_project.getById(device.project_id);
+  let mqtt_prefix = `${project.name}/${device.uid}`;
+  let topic = `${mqtt_prefix}/${topicBck}/set`
+  let payload = "";
+  if(dbTopic?.remoteData && typeof dbTopic?.remoteData === 'object'){
+    try{
+      payload = JSON.stringify(dbTopic?.remoteData);
+    }catch(err){
+      console.error(err);
+      return;
+    }
+  }else{
+    payload = dbTopic?.remoteData;
+  }
+  $.mqtt_client.publish(topic,payload,{qos:1,retain:false});
+}
+
+async function updateLocalSettings(device,topic,payload){
 
   $.db_device.addLog(device.id,"local_settings",JSON.stringify(payload));
 
@@ -528,7 +587,6 @@ async function synchSettings(device,key){
       }
     }
   }
-
 }
 
 async function updateSensor(device,ref,payload){
@@ -609,4 +667,13 @@ function getWordAfterLastSlash(str){
     return str;
   }
   return str.substring(lastSlashIndex + 1);
+}
+
+function getWordBeforeLastSlash(str){
+  const lastSlashIndex = str.lastIndexOf('/');
+  if (lastSlashIndex === -1) {
+    // No slash found, return the original string
+    return str;
+  }
+  return str.substring(0,lastSlashIndex);
 }
