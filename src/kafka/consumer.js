@@ -58,9 +58,17 @@ var self = module.exports = {
 
         kafka = new Kafka(kafkaConfig);
 
+        let kafkaGroupId = "";
+        if(config.env === 'development'){
+          const n = Math.floor(Math.random() * 1000) + 1; // 1..1000
+          kafkaGroupId = `${config.kafka.groupId}-${String(n)}`;
+        }else{
+          kafkaGroupId = config.kafka.groupId;
+        }
+
         // Create consumer with shared subscription support
         consumer = kafka.consumer({
-          groupId: config.kafka.groupId,
+          groupId: kafkaGroupId,
           sessionTimeout: 30000,
           rebalanceTimeout: 60000,
           heartbeatInterval: 3000,
