@@ -32,6 +32,16 @@ module.exports = (sequelize,DataTypes)=>{
 		template_id: {
 			type: DataTypes.INTEGER,
 			allowNull: true,
+		},
+		synch: {
+			type: DataTypes.INTEGER,
+			default: 0,
+			allowNull: true,
+		},
+		synched: {
+			type: DataTypes.INTEGER,
+			default: 0,
+			allowNull: true,
 		}
 	},
 	{

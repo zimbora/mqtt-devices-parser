@@ -194,7 +194,6 @@ var self = module.exports = {
 		});
 	},
 
-
 	addLog : async(id,column,value)=>{
 		return new Promise((resolve,reject) => {
 
@@ -255,26 +254,26 @@ var self = module.exports = {
 
 	getLocalSettings : async(deviceId)=>{
 
-  		return new Promise((resolve,reject) => {
+		return new Promise((resolve,reject) => {
 
-		    let query = "SELECT local_settings FROM ?? where id = ?";
-		    let table = ["devices", deviceId];
-		    query = mysql.format(query,table);
+	    let query = "SELECT local_settings FROM ?? where id = ?";
+	    let table = ["devices", deviceId];
+	    query = mysql.format(query,table);
 
-		    $.db.queryRow(query)
-		    .then( rows => {
-		    	if(rows?.length > 0)
-			  		return resolve(rows[0]?.local_settings);
-			  	else
-			  		return resolve(null);
-		    })
-		    .catch( err => {
-		      return reject(err);
-		    });
+	    $.db.queryRow(query)
+	    .then( rows => {
+	    	if(rows?.length > 0)
+		  		return resolve(rows[0]?.local_settings);
+		  	else
+		  		return resolve(null);
+	    })
+	    .catch( err => {
+	      return reject(err);
+	    });
 		});
-  	},
+	},
 
-  updateLocalSettings : async(settings, deviceId)=>{
+	updateLocalSettings : async(settings, deviceId)=>{
 
 		return new Promise((resolve,reject) => {
 			let obj = {
@@ -299,7 +298,7 @@ var self = module.exports = {
 		});
 	},
 
-  getRemoteSettings : async(deviceId)=>{
+	getRemoteSettings : async(deviceId)=>{
 
 		return new Promise((resolve,reject) => {
 
@@ -408,6 +407,103 @@ var self = module.exports = {
 	      return resolve(null);
 	    });
 	  });
-	}
+	},
 
+	getMqttTopic : async(deviceId, topic)=>{
+		return new Promise((resolve,reject) => {
+
+	    let query = "SELECT * FROM ?? where device_id = ? and topic = ?";
+	    let args = ["mqtt",deviceId,topic];
+	    query = mysql.format(query,args);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	      if(rows.length > 0)
+	        return resolve(rows[0]);
+	      else
+	        return resolve(null);
+	    })
+	    .catch( err => {
+	      console.log(err);
+	      return resolve(null);
+	    });
+	  });
+	},
+
+	updateLocalTopic : async(id, data)=>{
+
+		let jsonData = {
+			value : data
+		};
+		
+		return new Promise((resolve,reject) => {
+			let obj = {
+				localData : JSON.stringify(jsonData),
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id
+			};
+
+		    $.db.update("mqtt",obj,filter)
+		    .then (rows => {
+		      return resolve(rows[0]);
+		    })
+		    .catch(error => {
+		      return reject(error);
+		    });
+		    
+		});
+	},
+
+	updateRemoteTopic : async(id, data)=>{
+
+		let jsonData = {
+			value : data
+		};
+
+		return new Promise((resolve,reject) => {
+			let obj = {
+				remoteData : JSON.stringify(jsonData),
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id
+			};
+			
+		    $.db.update("mqtt",obj,filter)
+		    .then (rows => {
+		      return resolve(rows[0]);
+		    })
+		    .catch(error => {
+		      return reject(error);
+		    });
+		    
+		});
+	},
+
+	setSynchedTopic : async(id, data)=>{
+		
+		return new Promise((resolve,reject) => {
+			let obj = {
+				synched : data ? 1 : 0,
+				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			}
+
+			let filter = {
+				id,
+			};
+
+		    $.db.update("mqtt",obj,filter)
+		    .then (rows => {
+		      return resolve(rows[0]);
+		    })
+		    .catch(error => {
+		      return reject(error);
+		    });
+		    
+		});
+	},
 }
