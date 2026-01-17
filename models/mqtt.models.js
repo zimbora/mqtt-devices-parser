@@ -33,6 +33,10 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.INTEGER,
 			allowNull: true,
 		},
+		mqttTemplate_id: {
+			type: DataTypes.INTEGER,
+			allowNull: true,
+		},
 		synch: {
 			type: DataTypes.INTEGER,
 			default: 0,

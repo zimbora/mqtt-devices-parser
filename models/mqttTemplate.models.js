@@ -13,7 +13,15 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.JSON,
 			allowNull: true	
 		},
+		localData: {
+			type: DataTypes.JSON,
+			allowNull: true	
+		},
 		readInterval: {
+			type: DataTypes.INTEGER,
+			allowNull: true
+		},
+		synch: {
 			type: DataTypes.INTEGER,
 			allowNull: true
 		},
