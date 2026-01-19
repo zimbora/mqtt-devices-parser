@@ -26,6 +26,10 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: false,
 		},
+		property: {
+			type: DataTypes.STRING,
+			allowNull: false,
+		},
 		graph: {
 			type: DataTypes.JSON,
 			allowNull: true,
