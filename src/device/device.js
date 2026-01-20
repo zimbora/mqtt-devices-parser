@@ -601,6 +601,14 @@ async function updateSensor(device,ref,payload){
   error = null;
   timestamp = null;
 
+  if(res?.type.toLowerCase() === "json"){
+    if(res?.property && payload.hasOwnProperty(res?.property)){
+      object = payload[res.property];
+    }else{
+      return;
+    }
+  }
+
   if (typeof object === 'object' && object !== null) {
     value = object?.value || object?.v;
     error = object?.error || object?.e;
