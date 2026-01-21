@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.24
+	src/device/device: fix log
+	src/kafka/consumer: increase initialRetryTime from 100 to 300ms
+	src/device/device: parseMqttMessage: get remote configs if not known
+	synch configs if they mismatch
+	models/devices.models: new column synch
+	synchs mqtt topics
+		Explanation
+		**
+		When a message is received, it checks if mqtt topic is associated to the device without "set" if present.
+		If topic exists and ends with set, updates localData column. If topic exists and doesn't end with set, updates remoteData column.
+		If localData was updated sets topic as unsynched
+		If remoteData was received and differs from localData and synch is enabled, tries to synch topic
+		**
+		adds synch and synched columns to mqtt table
+		Adds methods getMqttTopic, updateRemoteTopic, setSynchedTopic
+	kafka: adds random number to kafka when program is in dev mode.
+		Avoids to read all queue messages since last session
+	mqtt templates: preparing mqtt topics synch
+		new column synch and localData for mqttTemplates table
+		new column mqttTemplate_id for mqtt table
+	add property "property" to table sensors
+	src/device/device: decode json payload and get property associated
+	models/devices: add synched column (for future implementations)
+
 ## 1.0.23
 	src/device/device: fix tech, version and app_version db update
 	npm warn audit Updating websocket-stream to 5.3.0, which is a SemVer major change.
