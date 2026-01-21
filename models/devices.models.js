@@ -81,6 +81,16 @@ module.exports = (sequelize,DataTypes)=>{
 			default: 0,
 			allowNull: true
 		},
+		disabled: {
+			type: DataTypes.BOOLEAN,
+			default: false,
+			allowNull: true
+		},
+		deleted: {
+			type: DataTypes.BOOLEAN,
+			default: false,
+			allowNull: true
+		}
 	},
 	{
 		tableName: 'devices',
