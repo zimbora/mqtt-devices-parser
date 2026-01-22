@@ -26,6 +26,7 @@ var self = module.exports = {
 	  });
 	},
 
+	// not used !!
 	getByRef : async (ref)=>{
 
 	  return new Promise((resolve,reject) => {

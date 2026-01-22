@@ -389,66 +389,76 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       }
       return;
       break;
-    case "sensor":
-      let ref = getFirstWord(topic)
-      updateSensor(device,ref,payload)
-      return;
-      break;
     // Optional: default case if needed
     default:
-      // handle other topics or do nothing
-      // check if topic is associated with device
-      let findTopic = topicBck;
-      if(topicBck.endsWith("/set")) // remove set if exists on topic
-        findTopic = getWordBeforeLastSlash(topicBck);
-
-      const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
-      if(dbTopic != null){
-        if(topicBck.endsWith("/set")){
-          // update local topic
-          $.db_device.updateLocalTopic(dbTopic.id,payload)
-          .then(()=>{
-            // set as not synched
-            $.db_device.setSynchedTopic(dbTopic.id,false);
-          })
-          .catch((error)=>{
-            console.error(error);
-          })
-        }else{
-          // update remote topic
-          $.db_device.updateRemoteTopic(dbTopic.id,payload)
-          .then(async (res)=>{
-            // check if topics mismatch
-            if(isDeepStrictEqual(dbTopic?.localData, dbTopic?.remoteData)){
-              $.db_device.setSynchedTopic(dbTopic.id,true);
-            }else{
-              // set as not synched
-              await $.db_device.setSynchedTopic(dbTopic.id,false);
-              if(dbTopic?.synch){ // check if sync is enabled
-                // synch topic
-                synchMqttTopic(device,dbTopic,findTopic);
-              }
-            }
-          })
-          .catch((error)=>{
-            console.error(error);
-          })
-
-        }
-      }
       break;
   }
 
+  // check if topic is associated with device
+  let findTopic = topicBck;
+  let set = false;
+  if(topicBck.endsWith("/set")){ // remove set if exists on topic
+    set = true;
+    findTopic = getWordBeforeLastSlash(topicBck);
+  }
+
+  const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
+  if(dbTopic != null){
+    handleMqttTopic(device,dbTopic,payload,set);
+  }
+
+  // check if topic is a sensor
+  // get id before try to update !!
+  if(!set){
+    const sensor = await $.db_sensor.getByRef(findTopic);
+    if(sensor)
+      updateSensor(device,sensor,payload)
+  }
+  
   if(_project[project_name]){
     _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,retain,()=>{});
   }
 }
 
-async function synchMqttTopic(device,dbTopic,topicBck){
+async function handleMqttTopic(device, dbTopic, payload, set){
+  if(set){
+    // update local topic
+    $.db_device.updateLocalTopic(dbTopic.id,payload)
+    .then(()=>{
+      // set as not synched
+      $.db_device.setSynchedTopic(dbTopic.id,false);
+    })
+    .catch((error)=>{
+      console.error(error);
+    })
+  }else{
+    // update remote topic
+    $.db_device.updateRemoteTopic(dbTopic.id,payload)
+    .then(async (res)=>{
+      // check if topics mismatch
+      if(isDeepStrictEqual(dbTopic?.localData, dbTopic?.remoteData)){
+        $.db_device.setSynchedTopic(dbTopic.id,true);
+      }else{
+        // set as not synched
+        await $.db_device.setSynchedTopic(dbTopic.id,false);
+        if(dbTopic?.synch){ // check if sync is enabled
+          // synch topic
+          synchMqttTopic(device,dbTopic);
+        }
+      }
+    })
+    .catch((error)=>{
+      console.error(error);
+    })
+
+  }
+}
+
+async function synchMqttTopic(device,dbTopic){
   
   const project = await $.db_project.getById(device.project_id);
   let mqtt_prefix = `${project.name}/${device.uid}`;
-  let topic = `${mqtt_prefix}/${topicBck}/set`
+  let topic = `${mqtt_prefix}/${dbTopic.topic}/set`
   let payload = "";
   if(dbTopic?.remoteData && typeof dbTopic?.remoteData === 'object'){
     try{
@@ -590,10 +600,10 @@ async function synchSettings(device,key){
 }
 
 async function updateSensor(device,ref,payload){
-  let res = await $.db_device.getSensorByRef(device.id,ref)
-  if(res == null)
-    res = await $.db_model.getSensorByRef(device.model_id,ref)
-  if(res == null)
+  let sensor = await $.db_device.getSensorByRef(device.id,ref)
+  if(sensor == null)
+    sensor = await $.db_model.getSensorByRef(device.model_id,ref)
+  if(sensor == null)
     return;
 
   object = payload;
@@ -601,9 +611,9 @@ async function updateSensor(device,ref,payload){
   error = null;
   timestamp = null;
 
-  if(res?.type.toLowerCase() === "json"){
-    if(res?.property && payload.hasOwnProperty(res?.property)){
-      object = payload[res.property];
+  if(sensor?.type.toLowerCase() === "json"){
+    if(sensor?.property && payload.hasOwnProperty(sensor?.property)){
+      object = payload[sensor.property];
     }else{
       return;
     }
@@ -627,7 +637,7 @@ async function updateSensor(device,ref,payload){
     timestamp
   }
 
-  $.db_sensor.insert(logs_table,device.id,res.id,data);
+  $.db_sensor.insert(logs_table,device.id,sensor.id,data);
   return;
 }
 
