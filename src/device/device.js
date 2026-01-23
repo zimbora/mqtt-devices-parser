@@ -2,6 +2,7 @@ const moment = require('moment');
 const { isDeepStrictEqual } = require('node:util');
 
 var _project = [];
+const table = "sensors"
 const logs_table = "logs_sensor";
 const semver = require('semver');
 
@@ -323,7 +324,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
           $.mqtt_client.publish(topic,"",{qos:1,retain:false});
         }
       }
-      return;
       break;
     case "model":
       let res = await $.db_model.getByName(payload);
@@ -332,14 +332,12 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "model_id", model_id);
         $.db_device.addLog(device.id,"model_id",model_id);
       }
-      return;
       break;
     case "tech":
       if (payload != null && payload != device?.tech) {
         $.db_device.update(device.id, "tech", payload);
         $.db_device.addLog(device.id,"tech",payload);
       }
-      return;
       break;
     case "version":
       if (payload != null && payload != device?.version) {
@@ -347,7 +345,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "version", payload);
         handleFotaSuccess(device.id);
       }
-      return;
       break;
     case "app_version":
       if (payload != null && payload != device?.app_version) {
@@ -355,7 +352,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "app_version", payload);
         handleFotaSuccess(device.id);
       }
-      return;
       break;
     case "fw":
       if(topic === "fota/update/status"){
@@ -379,7 +375,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
           } 
         }
       }
-      return;
       break;
     case "settings":
       if(topic.endsWith("/set")){
@@ -387,7 +382,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       }else{
         updateRemoteSettings(device,topic,payload);
       }
-      return;
       break;
     // Optional: default case if needed
     default:
@@ -408,12 +402,8 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   }
 
   // check if topic is a sensor
-  // get id before try to update !!
-  if(!set){
-    const sensor = await $.db_sensor.getByRef(findTopic);
-    if(sensor)
-      updateSensor(device,sensor,payload)
-  }
+  if(!set)
+    updateSensor(device,topicBck,payload);
   
   if(_project[project_name]){
     _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,retain,()=>{});
@@ -600,45 +590,51 @@ async function synchSettings(device,key){
 }
 
 async function updateSensor(device,ref,payload){
-  let sensor = await $.db_device.getSensorByRef(device.id,ref)
-  if(sensor == null)
-    sensor = await $.db_model.getSensorByRef(device.model_id,ref)
-  if(sensor == null)
+
+  let sensors = await $.db_device.getSensorsByRef(device.id,ref)
+
+  if(sensors?.length)
     return;
 
   object = payload;
   value = null;
   error = null;
   timestamp = null;
-
-  if(sensor?.type.toLowerCase() === "json"){
-    if(sensor?.property && payload.hasOwnProperty(sensor?.property)){
-      object = payload[sensor.property];
+  
+  sensors.map( (sensor,index) =>{
+    let value = null;
+    let error = null;
+    let remoteUnixTs = null;
+    if(sensor?.type === "json" && typeof object === 'object'){
+      if(object.hasOwnProperty(sensor?.property)){
+        value = object[sensor.property];
+      }
     }else{
-      return;
+      if (typeof object === 'object') {
+        value = object?.value || object?.v;
+        error = object?.error || object?.e;
+        remoteUnixTs = object?.timestamp || objects?.ts;
+      }else{
+        value = payload;
+      }
     }
-  }
+    if(value || error){
 
-  if (typeof object === 'object' && object !== null) {
-    value = object?.value || object?.v;
-    error = object?.error || object?.e;
-    timestamp = object?.timestamp || objects?.ts;
-  }else{
-    value = payload;
-  }
+      const data = {
+        value,
+        error,
+        remoteUnixTs
+      }
 
-  if(value || error)
-    object = null;
+      let filter = {
+        id : sensor.id
+      }
 
-  const data = {
-    object,
-    value,
-    error,
-    timestamp
-  }
+      $.db_sensor.update(table,data,filter);    
+      $.db_sensor.insert(logs_table,device.id,sensor.id,data);    
+    }
+  })
 
-  $.db_sensor.insert(logs_table,device.id,sensor.id,data);
-  return;
 }
 
 function handleFotaSuccess (deviceId){
