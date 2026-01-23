@@ -30,7 +30,7 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true,
 		},
-		localUnixTs: {
+		remoteUnixTs: {
 			type: DataTypes.BIGINT,
 			allowNull: true,
 		}
