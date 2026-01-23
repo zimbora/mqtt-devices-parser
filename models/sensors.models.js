@@ -3,11 +3,19 @@ module.exports = (sequelize,DataTypes)=>{
 	return sequelize.define("sensors", {
 		model_id: { // reference a model
 			type: DataTypes.INTEGER,
-			allowNull: true,
+			allowNull: false,
+			references: {
+				model: 'models',
+				key: 'id'
+			}
 		},
 		device_id: { // reference a device id
 			type: DataTypes.INTEGER,
-			allowNull: true,
+			allowNull: false,
+			references: {
+				model: 'devices',
+				key: 'id'
+			}
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
@@ -28,7 +36,19 @@ module.exports = (sequelize,DataTypes)=>{
 		},
 		property: {
 			type: DataTypes.STRING,
-			allowNull: false,
+			allowNull: true
+		},
+		value: {
+			type: DataTypes.STRING,
+			allowNull: true
+		},
+		error: {
+			type: DataTypes.STRING,
+			allowNull: true,
+		},
+		remoteUnixTs: {
+			type: DataTypes.BIGINT,
+			allowNull: true,
 		},
 		graph: {
 			type: DataTypes.JSON,
