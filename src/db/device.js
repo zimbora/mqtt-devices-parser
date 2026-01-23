@@ -388,7 +388,7 @@ var self = module.exports = {
 		});
 	},
 
-	getSensorByRef : async(deviceId, ref)=>{
+	getSensorsByRef : async(deviceId, ref)=>{
 		return new Promise((resolve,reject) => {
 
 	    let query = "SELECT * FROM ?? where device_id = ? and ref = ?";
@@ -398,7 +398,7 @@ var self = module.exports = {
 	    $.db.queryRow(query)
 	    .then( rows => {
 	      if(rows.length > 0)
-	        return resolve(rows[0]);
+	        return resolve(rows);
 	      else
 	        return resolve(null);
 	    })
