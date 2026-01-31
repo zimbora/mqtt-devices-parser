@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.0.25
+
+	Sensors template (#9)
+
+		* new table sensorsTemplate
+
+		* store topics which match a sensor
+		for each mqtt msg received, check if there is a sensor associated to that topic.
+		If there is, update current value and insert new log
+
+		* db: models/sensors
+		changes localUnixTs field to remoteUnixTs
+		adds value, error
+		changes property: allow null
+		adds foreign keys to model_id and device_id
+
+		* handle change db column localUnixTs to remoteUnixTs
+
+		* fix getSensorsByRef
+		ref is not unique so it can have more than 1 row
+
+		* src/db/data: Implements missing function pathIntoObject
+
+		* src/aux/parser: adds functions to handle mqtt topics parsing
+		index: uses global $.parser as a pointer to class src/aux/parser
+		src/device/device: fixes null iterations, sets updateSensor and handleMqttTopic as public functions. Removes local mqtt parser functions. Adapts calls to those functions
+
+	mqtt: always check if topic is registered
+		store values in db
+		
 ## 1.0.24
 	src/device/device: fix log
 	src/kafka/consumer: increase initialRetryTime from 100 to 300ms
