@@ -17,6 +17,7 @@ $.db_firmware = require('./src/db/firmware');
 $.db_sensor = require('./src/db/sensor');
 $.db_fota = require('./src/db/fota');
 $.mqtt_client = null;
+$.parser = require('./src/aux/parser')
 
 const packageJson = require(__dirname+'/package.json');
 const packageVersion = packageJson.version;
