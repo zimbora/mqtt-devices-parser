@@ -372,3 +372,59 @@ var self = module.exports = {
 	  });
 	}
 };
+
+/**
+ * Build a nested object from a path string and a leaf value.
+ *
+ * Example:
+ *   pathIntoObject('foo/bar/baz', 123) -> { foo: { bar: { baz: 123 } } }
+ *
+ * Notes:
+ * - By default, splits on '/'.
+ * - Leading/trailing/duplicate delimiters are ignored (e.g., '/a//b/' -> ['a','b']).
+ * - Value is used as-is. If you pass JSON.stringify(data), the leaf will be that string.
+ *
+ * @param {string} path - The path to turn into nested object keys (e.g., 'a/b/c').
+ * @param {*} value - The value to place at the final key.
+ * @param {Object} [options]
+ * @param {string} [options.delimiter='/'] - Path delimiter.
+ * @returns {*}
+ */
+const parser = {
+  pathIntoObject(path, value, options = {}) {
+    const delimiter = options.delimiter || '/';
+
+    if (typeof path !== 'string') {
+      throw new TypeError('path must be a string');
+    }
+
+    // Normalize path: remove empty segments caused by leading/trailing or duplicate delimiters
+    const segments = path
+      .split(delimiter)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    // If no segments, just return the value directly
+    if (segments.length === 0) return value;
+
+    // Build nested object
+    let root = {};
+    let cursor = root;
+
+    for (let i = 0; i < segments.length; i++) {
+      const key = segments[i];
+      const isLast = i === segments.length - 1;
+
+      if (isLast) {
+        cursor[key] = value;
+      } else {
+        // Create the next level if not present
+        cursor[key] = {};
+        cursor = cursor[key];
+      }
+    }
+
+    return root;
+  },
+};
+

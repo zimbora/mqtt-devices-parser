@@ -1,19 +1,11 @@
 
 module.exports = (sequelize,DataTypes)=>{
-	return sequelize.define("sensors", {
+	return sequelize.define("sensorsTemplate", {
 		model_id: { // reference a model
 			type: DataTypes.INTEGER,
 			allowNull: false,
 			references: {
 				model: 'models',
-				key: 'id'
-			}
-		},
-		device_id: { // reference a device id
-			type: DataTypes.INTEGER,
-			allowNull: false,
-			references: {
-				model: 'devices',
 				key: 'id'
 			}
 		},
@@ -38,25 +30,13 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true
 		},
-		value: {
-			type: DataTypes.STRING,
-			allowNull: true
-		},
-		error: {
-			type: DataTypes.STRING,
-			allowNull: true,
-		},
-		remoteUnixTs: {
-			type: DataTypes.BIGINT,
-			allowNull: true,
-		},
 		graph: {
 			type: DataTypes.JSON,
 			allowNull: true,
 		}
 	},
 	{
-		tableName: 'sensors',
+		tableName: 'sensorsTemplate',
 		freezeTableName: true
 	})
 }

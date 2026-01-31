@@ -2,6 +2,7 @@ const moment = require('moment');
 const { isDeepStrictEqual } = require('node:util');
 
 var _project = [];
+const table = "sensors"
 const logs_table = "logs_sensor";
 const semver = require('semver');
 
@@ -30,8 +31,6 @@ var self = module.exports = {
         })
       })
     });
-
-
   },
 
   parseMessage : async (client,topic,payload,retain)=>{
@@ -49,22 +48,22 @@ var self = module.exports = {
     }catch(err){};
     
     // --- project ---
-    project_name = getFirstWord(topic);
+    project_name = $.parser.getFirstWord(topic);
     project = await $.db_project.getByName(project_name);
     if(project == null)
       return;
 
     project_id = project?.id;
-    topic = getWordAfterSlash(topic)
+    topic = $.parser.getTopicAfterSlash(topic)
 
     // check if is from lwm2m gw
     if(topic.startsWith("responses") || topic.startsWith("requests")){
-      action = getFirstWord(topic);
-      topic = getWordAfterSlash(topic);
+      action = $.parser.getFirstWord(topic);
+      topic = $.parser.getTopicAfterSlash(topic);
     }
 
     // --- uid ---
-    uid = getFirstWord(topic);
+    uid = $.parser.getFirstWord(topic);
     // check if topic corresponds to a device
     if(!uid.startsWith(project.uidPrefix) || uid.length > project?.uidLength)
       return;
@@ -73,14 +72,13 @@ var self = module.exports = {
     if(!device)
       return;
 
-    topic = getWordAfterSlash(topic);
+    topic = $.parser.getTopicAfterSlash(topic);
 
     if(device.protocol.toLowerCase() === "lwm2m"){
       parseLwm2mMessage(client, project_name, device, topic, payload, action);
     }else if(device.protocol.toLowerCase() === "mqtt"){
       parseMqttMessage(client, project_name, device, topic, payload, retain);
     }
-
   },
 
   deleteLogs : async()=>{
@@ -104,6 +102,9 @@ var self = module.exports = {
   checkFota : async (release = "dev")=>{
 
     const models = await $.db_model.getAll();
+
+    if(!models || !models?.length)
+        return;
 
     for (const model of models) {
       
@@ -181,6 +182,9 @@ var self = module.exports = {
 
     const devices = await $.db_fota.getUpdatable(release);
 
+    if(!devices || !!devices?.length)
+      return;
+
     const batchSize = 10;
     for (let i = 0; i < devices.length; i += batchSize) {
       const batch = devices.slice(i, i + batchSize);
@@ -247,6 +251,91 @@ var self = module.exports = {
     }
   },
 
+
+  updateSensor : async (device,ref,payload)=>{
+
+    let sensors = await $.db_device.getSensorsByRef(device.id,ref)
+
+    if(!sensors?.length)
+      return;
+
+    object = payload;
+    value = null;
+    error = null;
+    timestamp = null;
+    
+    sensors.map( (sensor,index) =>{
+      let value = null;
+      let error = null;
+      let remoteUnixTs = null;
+      if(sensor?.type === "json" && typeof object === 'object'){
+        if(object.hasOwnProperty(sensor?.property)){
+          value = object[sensor.property];
+        }
+      }else{
+        if (typeof object === 'object') {
+          value = object?.value || object?.v;
+          error = object?.error || object?.e;
+          remoteUnixTs = object?.timestamp || objects?.ts;
+        }else{
+          value = payload;
+        }
+      }
+      if(value || error){
+
+        if(!remoteUnixTs)
+          remoteUnixTs = moment().unix()
+
+        const data = {
+          value,
+          error,
+          remoteUnixTs
+        }
+
+        let filter = {
+          id : sensor.id
+        }
+
+        $.db_sensor.update(table,data,filter);    
+        $.db_sensor.insert(logs_table,device.id,sensor.id,data);    
+      }
+    })
+  },
+
+  handleMqttTopic : async(device, dbTopic, payload, set)=>{
+    if(set){
+      // update local topic
+      $.db_device.updateLocalTopic(dbTopic.id,payload)
+      .then(()=>{
+        // set as not synched
+        $.db_device.setSynchedTopic(dbTopic.id,false);
+      })
+      .catch((error)=>{
+        console.error(error);
+      })
+    }else{
+      // update remote topic
+      $.db_device.updateRemoteTopic(dbTopic.id,payload)
+      .then(async (res)=>{
+        // check if topics mismatch
+        if(isDeepStrictEqual(dbTopic?.localData, dbTopic?.remoteData)){
+          $.db_device.setSynchedTopic(dbTopic.id,true);
+        }else{
+          // set as not synched
+          await $.db_device.setSynchedTopic(dbTopic.id,false);
+          if(dbTopic?.synch){ // check if sync is enabled
+            // synch topic
+            synchMqttTopic(device,dbTopic);
+          }
+        }
+      })
+      .catch((error)=>{
+        console.error(error);
+      })
+
+    }
+  },
+
 }
 
 async function parseLwm2mMessage(client, project_name, device, topic, payload, action){
@@ -257,8 +346,8 @@ async function parseLwm2mMessage(client, project_name, device, topic, payload, a
     payload = JSON.parse(payload);
   }catch(error){}
 
-  let word = getFirstWord(topic);
-  topic = getWordAfterSlash(topic);
+  let word = $.parser.getFirstWord(topic);
+  topic = $.parser.getTopicAfterSlash(topic);
 
   switch (word) {
     case "status":
@@ -269,7 +358,7 @@ async function parseLwm2mMessage(client, project_name, device, topic, payload, a
       return;
       break;
     case "sensor":
-      updateSensor(device,topic,payload)
+      self.updateSensor(device,topic,payload)
   }
 
   if(_project[project_name]){
@@ -289,8 +378,8 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
     payload = JSON.parse(payload);
   }catch(error){}
 
-  let word = getFirstWord(topic);
-  topic = getWordAfterSlash(topic);
+  let word = $.parser.getFirstWord(topic);
+  topic = $.parser.getTopicAfterSlash(topic);
 
   switch (word) {
     case "status":
@@ -299,6 +388,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.addLog(device.id,"status",payload);
       }
 
+      // list mqtt topics and do calls to readable topics
       if (payload === "online"){
         let mqtt_prefix = `${project_name}/${device.uid}`;
         // check if remote settings are known, if not require it
@@ -323,7 +413,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
           $.mqtt_client.publish(topic,"",{qos:1,retain:false});
         }
       }
-      return;
       break;
     case "model":
       let res = await $.db_model.getByName(payload);
@@ -332,14 +421,12 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "model_id", model_id);
         $.db_device.addLog(device.id,"model_id",model_id);
       }
-      return;
       break;
     case "tech":
       if (payload != null && payload != device?.tech) {
         $.db_device.update(device.id, "tech", payload);
         $.db_device.addLog(device.id,"tech",payload);
       }
-      return;
       break;
     case "version":
       if (payload != null && payload != device?.version) {
@@ -347,7 +434,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "version", payload);
         handleFotaSuccess(device.id);
       }
-      return;
       break;
     case "app_version":
       if (payload != null && payload != device?.app_version) {
@@ -355,7 +441,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         $.db_device.update(device.id, "app_version", payload);
         handleFotaSuccess(device.id);
       }
-      return;
       break;
     case "fw":
       if(topic === "fota/update/status"){
@@ -371,7 +456,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         }else if(typeof payload !== 'object' && payload !== null){
           // change it to topic.startsWith("fw")
           try{
-            const column = getWordAfterLastSlash(topic);
+            const column = $.parser.getWordAfterLastSlash(topic);
             let rows = await $.db_data.update("fw",device.id,column,payload);
             rows = await $.db_data.addLog("logs_fw",device.id,column,payload);
           }catch(error){
@@ -379,7 +464,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
           } 
         }
       }
-      return;
       break;
     case "settings":
       if(topic.endsWith("/set")){
@@ -387,7 +471,6 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       }else{
         updateRemoteSettings(device,topic,payload);
       }
-      return;
       break;
     // Optional: default case if needed
     default:
@@ -399,58 +482,20 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   let set = false;
   if(topicBck.endsWith("/set")){ // remove set if exists on topic
     set = true;
-    findTopic = getWordBeforeLastSlash(topicBck);
+    findTopic = $.parser.getWordBeforeLastSlash(topicBck);
   }
 
   const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
   if(dbTopic != null){
-    handleMqttTopic(device,dbTopic,payload,set);
+    self.handleMqttTopic(device,dbTopic,payload,set);
   }
 
   // check if topic is a sensor
-  // get id before try to update !!
-  if(!set){
-    const sensor = await $.db_sensor.getByRef(findTopic);
-    if(sensor)
-      updateSensor(device,sensor,payload)
-  }
+  if(!set)
+    self.updateSensor(device,topicBck,payload);
   
   if(_project[project_name]){
     _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,retain,()=>{});
-  }
-}
-
-async function handleMqttTopic(device, dbTopic, payload, set){
-  if(set){
-    // update local topic
-    $.db_device.updateLocalTopic(dbTopic.id,payload)
-    .then(()=>{
-      // set as not synched
-      $.db_device.setSynchedTopic(dbTopic.id,false);
-    })
-    .catch((error)=>{
-      console.error(error);
-    })
-  }else{
-    // update remote topic
-    $.db_device.updateRemoteTopic(dbTopic.id,payload)
-    .then(async (res)=>{
-      // check if topics mismatch
-      if(isDeepStrictEqual(dbTopic?.localData, dbTopic?.remoteData)){
-        $.db_device.setSynchedTopic(dbTopic.id,true);
-      }else{
-        // set as not synched
-        await $.db_device.setSynchedTopic(dbTopic.id,false);
-        if(dbTopic?.synch){ // check if sync is enabled
-          // synch topic
-          synchMqttTopic(device,dbTopic);
-        }
-      }
-    })
-    .catch((error)=>{
-      console.error(error);
-    })
-
   }
 }
 
@@ -599,47 +644,6 @@ async function synchSettings(device,key){
   }
 }
 
-async function updateSensor(device,ref,payload){
-  let sensor = await $.db_device.getSensorByRef(device.id,ref)
-  if(sensor == null)
-    sensor = await $.db_model.getSensorByRef(device.model_id,ref)
-  if(sensor == null)
-    return;
-
-  object = payload;
-  value = null;
-  error = null;
-  timestamp = null;
-
-  if(sensor?.type.toLowerCase() === "json"){
-    if(sensor?.property && payload.hasOwnProperty(sensor?.property)){
-      object = payload[sensor.property];
-    }else{
-      return;
-    }
-  }
-
-  if (typeof object === 'object' && object !== null) {
-    value = object?.value || object?.v;
-    error = object?.error || object?.e;
-    timestamp = object?.timestamp || objects?.ts;
-  }else{
-    value = payload;
-  }
-
-  if(value || error)
-    object = null;
-
-  const data = {
-    object,
-    value,
-    error,
-    timestamp
-  }
-
-  $.db_sensor.insert(logs_table,device.id,sensor.id,data);
-  return;
-}
 
 function handleFotaSuccess (deviceId){
   let object = {
@@ -660,38 +664,4 @@ function handleFotaError (deviceId, error){
   $.db_fota.updateLog(deviceId,object);
 }
 
-function getFirstWord(str){
-  const slashIndex = str.indexOf('/');
-  if (slashIndex === -1) {
-    // No slash found, return the original string
-    return str;
-  }
-  return str.substring(0,slashIndex);
-}
 
-function getWordAfterSlash(str){
-  const slashIndex = str.indexOf('/');
-  if (slashIndex === -1) {
-    // No slash found, return empty string
-    return "";
-  }
-  return str.substring(slashIndex + 1);
-}
-
-function getWordAfterLastSlash(str){
-  const lastSlashIndex = str.lastIndexOf('/');
-  if (lastSlashIndex === -1) {
-    // No slash found, return the original string
-    return str;
-  }
-  return str.substring(lastSlashIndex + 1);
-}
-
-function getWordBeforeLastSlash(str){
-  const lastSlashIndex = str.lastIndexOf('/');
-  if (lastSlashIndex === -1) {
-    // No slash found, return the original string
-    return str;
-  }
-  return str.substring(0,lastSlashIndex);
-}
