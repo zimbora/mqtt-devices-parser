@@ -412,6 +412,10 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
           let topic = `${mqtt_prefix}/settings/mqtt/get`
           $.mqtt_client.publish(topic,"",{qos:1,retain:false});
         }
+        if(device?.tech.toLowerCase() === "wifi"){
+          let topic = `${mqtt_prefix}/fw/wifi/get`
+          $.mqtt_client.publish(topic,"",{qos:1,retain:false});
+        }
       }
       break;
     case "model":
