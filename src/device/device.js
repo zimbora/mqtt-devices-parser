@@ -450,10 +450,11 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       if(topic === "fota/update/status"){
         handleFotaError(device.id, payload);
       }else{
+        let word = $.parser.getFirstWord(topic);
         if(typeof payload === 'object' && payload !== null){
           try{
             let rows = await $.db_data.updateJson("fw",device.id,payload);
-            rows = await $.db_data.addJsonLog("logs_fw",device.id,payload);
+            rows = await $.db_data.addJsonLog("logs_fw",device.id,payload,word);
           }catch(error){
             console.error(error)
           } 

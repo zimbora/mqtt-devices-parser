@@ -275,7 +275,7 @@ var self = module.exports = {
 	  });
 	},
 
-	addJsonLog: async (table, deviceId, dataObject) => {
+	addJsonLog: async (table, deviceId, dataObject, column = "") => {
 		return new Promise((resolve, reject) => {
 			if (!dataObject || typeof dataObject !== 'object') 
 				return reject("Not an object");
@@ -291,17 +291,22 @@ var self = module.exports = {
 			if (db_columns == null) 
 				return reject(`No columns for table: ${table}`);
 
-			// Prepare data for insertion
-			for (let key in dataObject) {
-				if (db_columns.hasOwnProperty(key)) {
-					let value = dataObject[key];
+			if(column != ""){
+				if (db_columns.hasOwnProperty(column))
+					obj[column] = JSON.stringify(dataObject);
+			}else{
+				// Prepare data for insertion
+				for (let key in dataObject) {
+					if (db_columns.hasOwnProperty(key)) {
+						let value = dataObject[key];
 
-					// Convert object to JSON string if needed
-					if (typeof value === 'object') {
-						value = JSON.stringify(value);
+						// Convert object to JSON string if needed
+						if (typeof value === 'object') {
+							value = JSON.stringify(value);
+						}
+
+						obj[key] = value;
 					}
-
-					obj[key] = value;
 				}
 			}
 
