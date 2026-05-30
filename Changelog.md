@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.26
+	feat: src/device/device: request fw/wifi/get
+		on device online reporting and if device is connected through wifi
+	fix: add logs in json format to logs_fw table
+	forces: usage of "ws": "^7.5.10" for websocket-stream package
+	vulnerabilities: 0 found
+
 ## 1.0.25
 
 	Sensors template (#9)

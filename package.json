@@ -1,6 +1,6 @@
 {
   "name": "mqtt-devices-parser",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,14 @@
     "path": "^0.12.7",
     "semver": "^7.3.8",
     "sequelize": "^6.32.1",
-    "websocket-stream": "^5.3.0"
+    "websocket-stream": "^5.4.0"
+  },
+  "overrides": {
+    "websocket-stream": {
+      "ws": "^7.5.10"
+    },
+    "sequelize": {
+      "uuid": "^11.1.1"
+    }
   }
 }
