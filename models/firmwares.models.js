@@ -29,6 +29,13 @@ module.exports = (sequelize,DataTypes)=>{
 				key: 'id'
 			},
 		},
+		variant_id: {
+			type: DataTypes.INTEGER,
+			references: {
+				model: 'variants',
+				key: 'id'
+			}
+		},
 		token: {
 			type: DataTypes.STRING,
 			allowNull: true
