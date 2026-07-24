@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.27
+	feat(db): adds variants table
+	
 ## 1.0.26
 	feat: src/device/device: request fw/wifi/get
 		on device online reporting and if device is connected through wifi
