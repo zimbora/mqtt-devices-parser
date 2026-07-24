@@ -1,6 +1,6 @@
 
 module.exports = (sequelize,DataTypes)=>{
-	return sequelize.define("modelPermissions", {
+	return sequelize.define("projectPermissions", {
 		client_id: {
 			type: DataTypes.INTEGER,
 			references: {
@@ -8,16 +8,19 @@ module.exports = (sequelize,DataTypes)=>{
 				key: 'id'
 			}
 		},
-		model_id: {
+		project_id: {
 			type: DataTypes.INTEGER,
 			references: {
-				model: 'models',
+				model: 'projects',
 				key: 'id'
 			}
+		},
+		level: {
+			type: DataTypes.INTEGER,
 		}
 	},
 	{
-		tableName: 'modelPermissions',
+		tableName: 'projectPermissions',
 		freezeTableName: true
 	})
 }

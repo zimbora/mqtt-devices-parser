@@ -20,10 +20,21 @@ module.exports = (sequelize,DataTypes)=>{
 				key: 'id'
 			}
 		},
+		template_id: {
+			type: DataTypes.INTEGER,
+			allowNull: true
+		},
 		model_id: {
 			type: DataTypes.INTEGER,
 			references: {
 				model: 'models',
+				key: 'id'
+			}
+		},
+		variant_id: {
+			type: DataTypes.INTEGER,
+			references: {
+				model: 'variants',
 				key: 'id'
 			}
 		},
@@ -59,11 +70,24 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.INTEGER,
 			allowNull: true
 		},
-		endpoint: { // info about protocol communication
-			type: DataTypes.JSON,
+		protocol: { // protocol communication to be used
+			type: DataTypes.STRING,
+			allowNull: false
+		},
+		psk: { // pre shared key
+			type: DataTypes.STRING,
 			allowNull: true
 		},
-
+		synch: { // set to 1 to enable auto synch
+			type: DataTypes.INTEGER,
+			default: 0,
+			allowNull: true
+		},
+		synched: { // handle internally
+			type: DataTypes.INTEGER,
+			default: 0,
+			allowNull: true
+		},
 	},
 	{
 		tableName: 'devices',

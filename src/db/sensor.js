@@ -26,6 +26,7 @@ var self = module.exports = {
 	  });
 	},
 
+	// not used !!
 	getByRef : async (ref)=>{
 
 	  return new Promise((resolve,reject) => {
@@ -95,7 +96,10 @@ var self = module.exports = {
 			let obj = {
 				device_id : deviceId,
 				sensor_id : sensorId,
-				value : payload,
+				value : payload?.value,
+				error : payload?.error,
+				obj : payload?.object,
+				remoteUnixTs : payload?.timestamp, // local timestamp
 				createdAt : moment().utc().format('YYYY-MM-DD HH:mm:ss'),
 				updatedAt : moment().utc().format('YYYY-MM-DD HH:mm:ss')
 			}
@@ -110,4 +114,16 @@ var self = module.exports = {
 		});
   	},
 
+	update : async(table,obj,filter)=>{
+		return new Promise((resolve,reject) => {
+
+			$.db.update(table,obj,filter)
+			.then (rows => {
+				return resolve(rows);
+			})
+			.catch(error => {
+				return reject(error);
+			});
+		});
+	},
 }

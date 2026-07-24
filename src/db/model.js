@@ -112,4 +112,25 @@ var self = module.exports = {
 		});
   	},
 
+  	getSensorsByRef : async(modelId, ref)=>{
+		return new Promise((resolve,reject) => {
+
+	    let query = "SELECT * FROM ?? where model_id = ? and ref = ?";
+	    let args = ["sensors",modelId,ref];
+	    query = mysql.format(query,args);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	      if(rows.length > 0)
+	        return resolve(rows);
+	      else
+	        return resolve(null);
+	    })
+	    .catch( err => {
+	      console.log(err);
+	      return resolve(null);
+	    });
+	  });
+	}
+
 }

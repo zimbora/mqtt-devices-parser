@@ -22,16 +22,18 @@ module.exports = (sequelize,DataTypes)=>{
 			type: DataTypes.STRING,
 			allowNull: true,
 		},
-		cliend_id: {
-			type: DataTypes.INTEGER,
-			unique: false,
+		error: {
+			type: DataTypes.STRING,
 			allowNull: true,
-			references: {
-				model: 'clients',
-				key: 'id'
-			}
 		},
-
+		obj: {
+			type: DataTypes.STRING,
+			allowNull: true,
+		},
+		remoteUnixTs: {
+			type: DataTypes.BIGINT,
+			allowNull: true,
+		}
 	},
 	{
 		tableName: 'logs_sensor',

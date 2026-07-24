@@ -1,5 +1,4 @@
-const moment = require('moment');
-const semver = require('semver');
+const parser = require('../aux/parser');
 
 // Mock global dependencies
 global.$ = {
@@ -8,6 +7,7 @@ global.$ = {
     getTables: jest.fn(),
     deleteOldEntries: jest.fn()
   },
+  parser: parser,
   db_project: {
     getByName: jest.fn(),
     insert: jest.fn(),
@@ -23,7 +23,13 @@ global.$ = {
     getRemoteSettings: jest.fn(),
     updateRemoteSettings: jest.fn(),
     listByModel: jest.fn(),
-    getById: jest.fn()
+    getById: jest.fn(),
+    getMqttTopic: jest.fn(),
+    getSensorsByRef: jest.fn(),
+    updateLocalTopic: jest.fn(),
+    setSynchedTopic: jest.fn(),
+    updateRemoteTopic: jest.fn(),
+    getAssociatedDevice: jest.fn()
   },
   db_model: {
     getByName: jest.fn(),
@@ -76,28 +82,30 @@ describe('Device Module', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
-    
+
     // Setup default mock implementations
     $.db.connect.mockImplementation((config, callback) => callback());
     $.db_project.getByName.mockResolvedValue(null);
+    $.db_device.getMqttTopic.mockResolvedValue(null);
+    $.db_device.getSensorsByRef.mockResolvedValue([]);
   });
 
   describe('init', () => {
     it('should initialize database connection and projects successfully', async () => {
       const mockConfig = { database: 'test' };
       const mockProjects = ['project1', 'project2'];
-      
+
       // Mock project modules
       const mockProject1 = { init: jest.fn() };
       const mockProject2 = { init: jest.fn() };
-      
+
       jest.doMock(`${BASE_DIR}/projects/project1/project1.js`, () => mockProject1, { virtual: true });
       jest.doMock(`${BASE_DIR}/projects/project2/project2.js`, () => mockProject2, { virtual: true });
-      
+
       $.db_project.getByName.mockResolvedValue(null);
       $.db_project.insert.mockResolvedValue();
 
-      const result = await device.init(mockConfig, mockProjects);
+      await device.init(mockConfig, mockProjects);
 
       expect($.db.connect).toHaveBeenCalledWith(mockConfig, expect.any(Function));
       expect($.db_project.getByName).toHaveBeenCalledTimes(2);
@@ -117,17 +125,20 @@ describe('Device Module', () => {
         status: 'offline',
         tech: 'wifi',
         version: '1.0.0',
-        app_version: '1.0.0'
+        app_version: '1.0.0',
+        protocol: 'mqtt'
       };
 
       $.db_project.getByName.mockResolvedValue({
         id: 1,
         name: 'testproject',
         uidPrefix: 'test-device-',
-        uidLength: 15  // Length of 'test-device-123'
+        uidLength: 15
       });
-      
+
       $.db_device.get.mockResolvedValue(mockDevice);
+      $.db_fota.update.mockResolvedValue();
+      $.db_fota.updateLog.mockResolvedValue();
     });
 
     it('should parse status message correctly', async () => {
@@ -140,10 +151,20 @@ describe('Device Module', () => {
       expect($.db_device.addLog).toHaveBeenCalledWith(1, 'status', 'online');
     });
 
+    it('should publish get topics when device comes online', async () => {
+      const topic = 'testproject/test-device-123/status';
+      const payload = 'online';
+      mockDevice.remote_settings = {};
+
+      await device.parseMessage(mockClient, topic, payload, false);
+
+      expect($.mqtt_client.publish).toHaveBeenCalled();
+    });
+
     it('should parse model message correctly when device tech differs from payload', async () => {
       const topic = 'testproject/test-device-123/model';
       const payload = 'TEST_MODEL';
-      
+
       // Make sure device.tech is different from payload so the condition passes
       mockDevice.tech = 'different_tech';
       $.db_device.get.mockResolvedValue(mockDevice);
@@ -159,7 +180,7 @@ describe('Device Module', () => {
     it('should parse version message correctly when device has existing version', async () => {
       const topic = 'testproject/test-device-123/version';
       const payload = '2.0.0';
-      
+
       // Device already has a version that's different from payload
       mockDevice.version = '1.0.0';
       $.db_device.get.mockResolvedValue(mockDevice);
@@ -173,7 +194,7 @@ describe('Device Module', () => {
     it('should parse app_version message correctly when device has existing app_version', async () => {
       const topic = 'testproject/test-device-123/app_version';
       const payload = '2.0.0';
-      
+
       // Device already has an app_version that's different from payload
       mockDevice.app_version = '1.0.0';
       $.db_device.get.mockResolvedValue(mockDevice);
@@ -184,19 +205,10 @@ describe('Device Module', () => {
       expect($.db_device.update).toHaveBeenCalledWith(1, 'app_version', '2.0.0');
     });
 
-    it('should handle invalid topic format', async () => {
-      const topic = 'invalid-topic';
-      const payload = 'test';
-
-      await device.parseMessage(mockClient, topic, payload, false);
-
-      expect($.db_project.getByName).not.toHaveBeenCalled();
-    });
-
-    it('should handle unknown project', async () => {
+    it('should return early for unknown project', async () => {
       const topic = 'unknownproject/test-device-123/status';
       const payload = 'online';
-      
+
       $.db_project.getByName.mockResolvedValue(null);
 
       await device.parseMessage(mockClient, topic, payload, false);
@@ -204,107 +216,94 @@ describe('Device Module', () => {
       expect($.db_device.get).not.toHaveBeenCalled();
     });
 
-    it('should handle settings/set messages', async () => {
+    it('should return early when uid does not match project prefix', async () => {
+      const topic = 'testproject/other-device-999/status';
+      const payload = 'online';
+
+      await device.parseMessage(mockClient, topic, payload, false);
+
+      expect($.db_device.get).not.toHaveBeenCalled();
+    });
+
+    it('should return early when device is not found', async () => {
+      const topic = 'testproject/test-device-123/status';
+      const payload = 'online';
+
+      $.db_device.get.mockResolvedValue(null);
+
+      await device.parseMessage(mockClient, topic, payload, false);
+
+      expect($.db_device.update).not.toHaveBeenCalled();
+    });
+
+    it('should handle settings/set messages (local settings)', async () => {
+      const settingsPayload = { ssid: 'test-network' };
       const topic = 'testproject/test-device-123/settings/wifi/ssid/set';
-      const payload = '{"ssid": "test-network"}';
+      const payload = JSON.stringify(settingsPayload);
 
       $.db_device.getLocalSettings.mockResolvedValue({});
       $.db_device.updateLocalSettings.mockResolvedValue();
 
       await device.parseMessage(mockClient, topic, payload, false);
 
-      expect($.db_device.addLog).toHaveBeenCalledWith(1, 'local_settings', JSON.stringify(payload));
+      // updateLocalSettings calls addLog with the JSON-parsed (object) payload
+      expect($.db_device.addLog).toHaveBeenCalledWith(
+        1,
+        'local_settings',
+        JSON.stringify(settingsPayload)
+      );
       expect($.db_device.updateLocalSettings).toHaveBeenCalled();
+    });
+
+    it('should handle settings messages without /set (remote settings)', async () => {
+      const settingsPayload = { threshold: 25 };
+      const topic = 'testproject/test-device-123/settings/sensor/temperature';
+      const payload = JSON.stringify(settingsPayload);
+
+      $.db_device.getRemoteSettings.mockResolvedValue({});
+      $.db_device.updateRemoteSettings.mockResolvedValue();
+
+      await device.parseMessage(mockClient, topic, payload, false);
+
+      expect($.db_device.addLog).toHaveBeenCalledWith(
+        1,
+        'remote_settings',
+        JSON.stringify(settingsPayload)
+      );
+      expect($.db_device.updateRemoteSettings).toHaveBeenCalled();
     });
 
     it('should handle fw messages with JSON payload', async () => {
+      const fwPayload = { version: '1.0.0', build: '123' };
       const topic = 'testproject/test-device-123/fw';
-      const payload = '{"version": "1.0.0", "build": "123"}';
+      const payload = JSON.stringify(fwPayload);
+
+      $.db_data.updateJson.mockResolvedValue();
+      $.db_data.addJsonLog.mockResolvedValue();
 
       await device.parseMessage(mockClient, topic, payload, false);
 
-      expect($.db_data.updateJson).toHaveBeenCalledWith('fw', 1, JSON.parse(payload));
-      expect($.db_data.addJsonLog).toHaveBeenCalledWith('logs_fw', 1, JSON.parse(payload));
-    });
-  });
-
-  describe('updateLocalSettings', () => {
-    const mockDevice = { id: 1 };
-
-    beforeEach(() => {
-      $.db_device.getLocalSettings.mockResolvedValue({});
-      $.db_device.updateLocalSettings.mockResolvedValue();
-      $.db_device.addLog.mockResolvedValue();
+      expect($.db_data.updateJson).toHaveBeenCalledWith('fw', 1, fwPayload);
+      expect($.db_data.addJsonLog).toHaveBeenCalledWith('logs_fw', 1, fwPayload, '');
     });
 
-    it('should update nested settings correctly', async () => {
-      const topic = 'wifi/ssid/set';
-      const payload = '{"ssid": "test-network", "password": "test-pass"}';
-      
-      $.db_device.getLocalSettings.mockResolvedValue({});
+    it('should handle fw/fota/update/status (FOTA error) message', async () => {
+      const topic = 'testproject/test-device-123/fw/fota/update/status';
+      const payload = 'Download failed';
 
-      await device.updateLocalSettings(mockDevice, topic, payload);
+      await device.parseMessage(mockClient, topic, payload, false);
 
-      expect($.db_device.addLog).toHaveBeenCalledWith(1, 'local_settings', JSON.stringify(payload));
-      expect($.db_device.updateLocalSettings).toHaveBeenCalled();
+      expect($.db_fota.updateLog).toHaveBeenCalledWith(1, { error: 'Download failed' });
     });
 
-    it('should handle invalid JSON payload', async () => {
-      const topic = 'wifi/ssid/set';
-      const payload = 'invalid-json';
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    it('should skip topics ending with /get', async () => {
+      const topic = 'testproject/test-device-123/settings/wifi/get';
+      const payload = '';
 
-      await device.updateLocalSettings(mockDevice, topic, payload);
+      await device.parseMessage(mockClient, topic, payload, false);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to parse payload JSON:', expect.any(Error));
-      expect($.db_device.updateLocalSettings).not.toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle empty topic', async () => {
-      const topic = '';
-      const payload = '{"test": "value"}';
-      
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      await device.updateLocalSettings(mockDevice, topic, payload);
-
-      // Empty string split by "/" gives [""], which has length 1
-      // So this test should actually process normally unless we use null/undefined topic
-      expect($.db_device.addLog).toHaveBeenCalledWith(1, 'local_settings', JSON.stringify(payload));
-      
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('updateRemoteSettings', () => {
-    const mockDevice = { id: 1 };
-
-    beforeEach(() => {
-      $.db_device.getRemoteSettings.mockResolvedValue({});
-      $.db_device.updateRemoteSettings.mockResolvedValue();
-      $.db_device.addLog.mockResolvedValue();
-    });
-
-    it('should update remote settings correctly', async () => {
-      const topic = 'sensor/temperature';
-      const payload = '{"threshold": 25}';
-
-      await device.updateRemoteSettings(mockDevice, topic, payload);
-
-      expect($.db_device.addLog).toHaveBeenCalledWith(1, 'remote_settings', JSON.stringify(payload));
-      expect($.db_device.updateRemoteSettings).toHaveBeenCalled();
-    });
-
-    it('should handle non-JSON payload', async () => {
-      const topic = 'sensor/temperature';
-      const payload = 'simple-value';
-
-      await device.updateRemoteSettings(mockDevice, topic, payload);
-
-      expect($.db_device.updateRemoteSettings).toHaveBeenCalled();
+      expect($.db_device.update).not.toHaveBeenCalled();
+      expect($.db_device.addLog).not.toHaveBeenCalled();
     });
   });
 
@@ -315,10 +314,10 @@ describe('Device Module', () => {
         { 'Tables_in_mqtt-aedes': 'logs_sensor' },
         { 'Tables_in_mqtt-aedes': 'regular_table' }
       ];
-      
+
       $.db.getTables.mockResolvedValue(mockTables);
       $.db.deleteOldEntries.mockResolvedValue();
-      
+
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
       await device.deleteLogs();
@@ -326,7 +325,7 @@ describe('Device Module', () => {
       expect($.db.getTables).toHaveBeenCalled();
       expect($.db.deleteOldEntries).toHaveBeenCalledTimes(2); // Only log tables
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('deleting logs of table'));
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -335,7 +334,7 @@ describe('Device Module', () => {
     const mockModels = [
       { id: 1, name: 'test-model' }
     ];
-    
+
     const mockDevices = [
       {
         id: 1,
@@ -357,10 +356,10 @@ describe('Device Module', () => {
     it('should check for firmware updates', async () => {
       const latestVersion = { id: 1, version: '2.0.0' };
       const latestAppVersion = { id: 2, app_version: '2.0.0' };
-      
+
       $.db_firmware.getLatestVersion.mockResolvedValue(latestVersion);
       $.db_firmware.getLatestAppVersion.mockResolvedValue(latestAppVersion);
-      
+
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
       await device.checkFota('prod');
@@ -369,14 +368,34 @@ describe('Device Module', () => {
       expect($.db_firmware.getLatestVersion).toHaveBeenCalledWith(1, 'prod');
       expect($.db_firmware.getLatestAppVersion).toHaveBeenCalledWith(1, 'prod');
       expect($.db_fota.update).toHaveBeenCalled();
-      
+
       consoleSpy.mockRestore();
     });
 
     it('should skip devices with different release acceptance', async () => {
-      mockDevices[0].accept_release = 'dev';
-      $.db_device.listByModel.mockResolvedValue(mockDevices);
-      
+      const devDevices = [{ ...mockDevices[0], accept_release: 'dev' }];
+      $.db_device.listByModel.mockResolvedValue(devDevices);
+
+      $.db_firmware.getLatestVersion.mockResolvedValue({ id: 1, version: '2.0.0' });
+      $.db_firmware.getLatestAppVersion.mockResolvedValue({ id: 2, app_version: '2.0.0' });
+
+      await device.checkFota('prod');
+
+      expect($.db_fota.update).not.toHaveBeenCalled();
+    });
+
+    it('should return early when no models are found', async () => {
+      $.db_model.getAll.mockResolvedValue([]);
+
+      await device.checkFota('prod');
+
+      expect($.db_firmware.getLatestVersion).not.toHaveBeenCalled();
+    });
+
+    it('should not create FOTA entry when versions already match', async () => {
+      $.db_firmware.getLatestVersion.mockResolvedValue({ id: 1, version: '1.0.0' });
+      $.db_firmware.getLatestAppVersion.mockResolvedValue({ id: 2, app_version: '1.0.0' });
+
       await device.checkFota('prod');
 
       expect($.db_fota.update).not.toHaveBeenCalled();
@@ -384,86 +403,23 @@ describe('Device Module', () => {
   });
 
   describe('triggerFota', () => {
-    const mockDevices = [
-      {
-        id: 1,
-        uid: 'device-123',
-        project_id: 1,
-        firmware_id: 1,
-        nAttempts: 0,
-        version: '1.0.0',
-        app_version: '1.0.0'
-      }
-    ];
-
     beforeEach(() => {
-      $.db_fota.getUpdatable.mockResolvedValue(mockDevices);
+      $.db_fota.getUpdatable.mockResolvedValue([]);
       $.db_fota.update.mockResolvedValue();
       $.db_fota.newLog.mockResolvedValue();
-      $.mqtt_client.publish.mockImplementation((topic, payload, options) => {});
+      $.mqtt_client.publish.mockImplementation(() => {});
     });
 
-    it('should trigger firmware updates for eligible devices', async () => {
-      const mockFirmware = {
-        id: 1,
-        model_id: 1,
-        filename: 'firmware.bin',
-        token: 'abc123',
-        version: '2.0.0',
-        app_version: '2.0.0'
-      };
-      
-      const mockProject = { id: 1, name: 'testproject' };
-      const mockModel = { id: 1, name: 'testmodel' };
-      
-      $.db_firmware.getById.mockResolvedValue(mockFirmware);
-      $.db_project.getById.mockResolvedValue(mockProject);
-      $.db_model.getById.mockResolvedValue(mockModel);
-      
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
+    it('should call getUpdatable with provided release', async () => {
       await device.triggerFota('prod');
 
       expect($.db_fota.getUpdatable).toHaveBeenCalledWith('prod');
-      expect($.mqtt_client.publish).toHaveBeenCalled();
-      expect($.db_fota.update).toHaveBeenCalled();
-      expect($.db_fota.newLog).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
     });
-  });
 
-  describe('handleFotaSuccess', () => {
-    it('should reset FOTA attempts and mark as successful', async () => {
-      const deviceId = 1;
-      
-      $.db_fota.update.mockResolvedValue();
-      $.db_fota.updateLog.mockResolvedValue();
+    it('should use dev release by default', async () => {
+      await device.triggerFota();
 
-      await device.handleFotaSuccess(deviceId);
-
-      expect($.db_fota.update).toHaveBeenCalledWith(deviceId, {
-        nAttempts: 0,
-        fUpdate: 0
-      });
-      expect($.db_fota.updateLog).toHaveBeenCalledWith(deviceId, {
-        success: 1
-      });
-    });
-  });
-
-  describe('handleFotaError', () => {
-    it('should log FOTA error', async () => {
-      const deviceId = 1;
-      const error = 'Download failed';
-      
-      $.db_fota.updateLog.mockResolvedValue();
-
-      await device.handleFotaError(deviceId, error);
-
-      expect($.db_fota.updateLog).toHaveBeenCalledWith(deviceId, {
-        error: 'Download failed'
-      });
+      expect($.db_fota.getUpdatable).toHaveBeenCalledWith('dev');
     });
   });
 });

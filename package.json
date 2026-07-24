@@ -1,6 +1,6 @@
 {
   "name": "mqtt-devices-parser",
-  "version": "1.0.14",
+  "version": "1.0.27",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^3.2.4",
+    "kafkajs": "^2.2.4",
     "lodash": "^4.17.21",
     "md5": "^2.3.0",
     "moment": "^2.29.4",
@@ -21,7 +22,15 @@
     "path": "^0.12.7",
     "semver": "^7.3.8",
     "sequelize": "^6.32.1",
-    "websocket-stream": "^5.5.2"
+    "websocket-stream": "^5.4.0"
+  },
+  "overrides": {
+    "websocket-stream": {
+      "ws": "^7.5.10"
+    },
+    "sequelize": {
+      "uuid": "^11.1.1"
+    }
   },
   "devDependencies": {
     "jest": "^30.0.5"

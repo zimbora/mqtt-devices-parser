@@ -275,7 +275,7 @@ var self = module.exports = {
 	  });
 	},
 
-	addJsonLog: async (table, deviceId, dataObject) => {
+	addJsonLog: async (table, deviceId, dataObject, column = "") => {
 		return new Promise((resolve, reject) => {
 			if (!dataObject || typeof dataObject !== 'object') 
 				return reject("Not an object");
@@ -291,17 +291,22 @@ var self = module.exports = {
 			if (db_columns == null) 
 				return reject(`No columns for table: ${table}`);
 
-			// Prepare data for insertion
-			for (let key in dataObject) {
-				if (db_columns.hasOwnProperty(key)) {
-					let value = dataObject[key];
+			if(column != ""){
+				if (db_columns.hasOwnProperty(column))
+					obj[column] = JSON.stringify(dataObject);
+			}else{
+				// Prepare data for insertion
+				for (let key in dataObject) {
+					if (db_columns.hasOwnProperty(key)) {
+						let value = dataObject[key];
 
-					// Convert object to JSON string if needed
-					if (typeof value === 'object') {
-						value = JSON.stringify(value);
+						// Convert object to JSON string if needed
+						if (typeof value === 'object') {
+							value = JSON.stringify(value);
+						}
+
+						obj[key] = value;
 					}
-
-					obj[key] = value;
 				}
 			}
 
@@ -372,3 +377,59 @@ var self = module.exports = {
 	  });
 	}
 };
+
+/**
+ * Build a nested object from a path string and a leaf value.
+ *
+ * Example:
+ *   pathIntoObject('foo/bar/baz', 123) -> { foo: { bar: { baz: 123 } } }
+ *
+ * Notes:
+ * - By default, splits on '/'.
+ * - Leading/trailing/duplicate delimiters are ignored (e.g., '/a//b/' -> ['a','b']).
+ * - Value is used as-is. If you pass JSON.stringify(data), the leaf will be that string.
+ *
+ * @param {string} path - The path to turn into nested object keys (e.g., 'a/b/c').
+ * @param {*} value - The value to place at the final key.
+ * @param {Object} [options]
+ * @param {string} [options.delimiter='/'] - Path delimiter.
+ * @returns {*}
+ */
+const parser = {
+  pathIntoObject(path, value, options = {}) {
+    const delimiter = options.delimiter || '/';
+
+    if (typeof path !== 'string') {
+      throw new TypeError('path must be a string');
+    }
+
+    // Normalize path: remove empty segments caused by leading/trailing or duplicate delimiters
+    const segments = path
+      .split(delimiter)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    // If no segments, just return the value directly
+    if (segments.length === 0) return value;
+
+    // Build nested object
+    let root = {};
+    let cursor = root;
+
+    for (let i = 0; i < segments.length; i++) {
+      const key = segments[i];
+      const isLast = i === segments.length - 1;
+
+      if (isLast) {
+        cursor[key] = value;
+      } else {
+        // Create the next level if not present
+        cursor[key] = {};
+        cursor = cursor[key];
+      }
+    }
+
+    return root;
+  },
+};
+
