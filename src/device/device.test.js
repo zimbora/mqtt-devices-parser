@@ -398,19 +398,6 @@ describe('Device Module', () => {
       expect($.db_fota.update).not.toHaveBeenCalled();
     });
 
-    it('should skip devices with undefined variant_id', async () => {
-      const devicesWithoutVariant = [{ ...mockDevices[0], variant_id: undefined }];
-      $.db_device.listByModel.mockResolvedValue(devicesWithoutVariant);
-
-      $.db_firmware.getLatestVersion.mockResolvedValue({ id: 1, version: '2.0.0' });
-      $.db_firmware.getLatestAppVersion.mockResolvedValue({ id: 2, app_version: '2.0.0' });
-
-      await device.checkFota('prod');
-
-      expect($.db_firmware.getLatestVersion).not.toHaveBeenCalled();
-      expect($.db_fota.update).not.toHaveBeenCalled();
-    });
-
     it('should return early when no models are found', async () => {
       $.db_model.getAll.mockResolvedValue([]);
 

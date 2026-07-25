@@ -118,6 +118,8 @@ var self = module.exports = {
         if(devices == null)
           continue;
 
+        const firmwareCache = new Map();
+
         for (const device of devices) {
 
           if(device?.accept_release != release){
@@ -128,8 +130,14 @@ var self = module.exports = {
             continue;
           }
 
-          const latestVersion = await $.db_firmware.getLatestVersion(model.id,release,device.variant_id);
-          const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release,device.variant_id);
+          const cacheKey = `${model.id}_${release}_${device.variant_id}`;
+          if(!firmwareCache.has(cacheKey)){
+            const latestVersion = await $.db_firmware.getLatestVersion(model.id,release,device.variant_id);
+            const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release,device.variant_id);
+            firmwareCache.set(cacheKey, { latestVersion, latestAppVersion });
+          }
+
+          const { latestVersion, latestAppVersion } = firmwareCache.get(cacheKey);
           //console.log("latestVersion:",latestVersion?.version);
           //console.log("latestAppVersion:",latestAppVersion?.app_version);
 
