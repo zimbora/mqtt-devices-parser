@@ -113,11 +113,6 @@ var self = module.exports = {
         continue;
 
       try{
-        const latestVersion = await $.db_firmware.getLatestVersion(model.id,release);
-        const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release);
-        //console.log("latestVersion:",latestVersion?.version);
-        //console.log("latestAppVersion:",latestAppVersion?.app_version);
-
         const devices = await $.db_device.listByModel(model.id);
 
         if(devices == null)
@@ -129,9 +124,21 @@ var self = module.exports = {
             continue;
           }
 
+          if(!device?.variant_id){
+            continue;
+          }
+
+          const latestVersion = await $.db_firmware.getLatestVersion(model.id,release,device.variant_id);
+          const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release,device.variant_id);
+          //console.log("latestVersion:",latestVersion?.version);
+          //console.log("latestAppVersion:",latestAppVersion?.app_version);
+
+          if(!latestVersion && !latestAppVersion)
+            continue;
+
           let obj = null;
           // insert filename on fota table for this device or update.
-          if(device?.app_version != latestAppVersion.app_version){
+          if(latestAppVersion && device?.app_version != latestAppVersion.app_version){
             obj = {
               model_id : device.model_id,
               target_version : latestVersion.version,

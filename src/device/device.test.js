@@ -340,6 +340,7 @@ describe('Device Module', () => {
         id: 1,
         uid: 'device-123',
         model_id: 1,
+        variant_id: 2,
         version: '1.0.0',
         app_version: '1.0.0',
         accept_release: 'prod'
@@ -365,8 +366,8 @@ describe('Device Module', () => {
       await device.checkFota('prod');
 
       expect($.db_model.getAll).toHaveBeenCalled();
-      expect($.db_firmware.getLatestVersion).toHaveBeenCalledWith(1, 'prod');
-      expect($.db_firmware.getLatestAppVersion).toHaveBeenCalledWith(1, 'prod');
+      expect($.db_firmware.getLatestVersion).toHaveBeenCalledWith(1, 'prod', 2);
+      expect($.db_firmware.getLatestAppVersion).toHaveBeenCalledWith(1, 'prod', 2);
       expect($.db_fota.update).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
@@ -381,6 +382,32 @@ describe('Device Module', () => {
 
       await device.checkFota('prod');
 
+      expect($.db_fota.update).not.toHaveBeenCalled();
+    });
+
+    it('should skip devices without variant_id', async () => {
+      const devicesWithoutVariant = [{ ...mockDevices[0], variant_id: null }];
+      $.db_device.listByModel.mockResolvedValue(devicesWithoutVariant);
+
+      $.db_firmware.getLatestVersion.mockResolvedValue({ id: 1, version: '2.0.0' });
+      $.db_firmware.getLatestAppVersion.mockResolvedValue({ id: 2, app_version: '2.0.0' });
+
+      await device.checkFota('prod');
+
+      expect($.db_firmware.getLatestVersion).not.toHaveBeenCalled();
+      expect($.db_fota.update).not.toHaveBeenCalled();
+    });
+
+    it('should skip devices with undefined variant_id', async () => {
+      const devicesWithoutVariant = [{ ...mockDevices[0], variant_id: undefined }];
+      $.db_device.listByModel.mockResolvedValue(devicesWithoutVariant);
+
+      $.db_firmware.getLatestVersion.mockResolvedValue({ id: 1, version: '2.0.0' });
+      $.db_firmware.getLatestAppVersion.mockResolvedValue({ id: 2, app_version: '2.0.0' });
+
+      await device.checkFota('prod');
+
+      expect($.db_firmware.getLatestVersion).not.toHaveBeenCalled();
       expect($.db_fota.update).not.toHaveBeenCalled();
     });
 
@@ -399,6 +426,23 @@ describe('Device Module', () => {
       await device.checkFota('prod');
 
       expect($.db_fota.update).not.toHaveBeenCalled();
+    });
+
+    it('should only compare firmware with the same variant_id as the device', async () => {
+      const latestVersion = { id: 1, version: '2.0.0' };
+      const latestAppVersion = { id: 2, app_version: '2.0.0' };
+
+      $.db_firmware.getLatestVersion.mockResolvedValue(latestVersion);
+      $.db_firmware.getLatestAppVersion.mockResolvedValue(latestAppVersion);
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      await device.checkFota('prod');
+
+      expect($.db_firmware.getLatestVersion).toHaveBeenCalledWith(1, 'prod', mockDevices[0].variant_id);
+      expect($.db_firmware.getLatestAppVersion).toHaveBeenCalledWith(1, 'prod', mockDevices[0].variant_id);
+
+      consoleSpy.mockRestore();
     });
   });
 
