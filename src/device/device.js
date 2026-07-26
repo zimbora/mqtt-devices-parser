@@ -113,15 +113,12 @@ var self = module.exports = {
         continue;
 
       try{
-        const latestVersion = await $.db_firmware.getLatestVersion(model.id,release);
-        const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release);
-        //console.log("latestVersion:",latestVersion?.version);
-        //console.log("latestAppVersion:",latestAppVersion?.app_version);
-
         const devices = await $.db_device.listByModel(model.id);
 
         if(devices == null)
           continue;
+
+        const firmwareCache = new Map();
 
         for (const device of devices) {
 
@@ -129,9 +126,27 @@ var self = module.exports = {
             continue;
           }
 
+          if(!device?.variant_id){
+            continue;
+          }
+
+          const cacheKey = `${model.id}_${release}_${device.variant_id}`;
+          if(!firmwareCache.has(cacheKey)){
+            const latestVersion = await $.db_firmware.getLatestVersion(model.id,release,device.variant_id);
+            const latestAppVersion = await $.db_firmware.getLatestAppVersion(model.id,release,device.variant_id);
+            firmwareCache.set(cacheKey, { latestVersion, latestAppVersion });
+          }
+
+          const { latestVersion, latestAppVersion } = firmwareCache.get(cacheKey);
+          //console.log("latestVersion:",latestVersion?.version);
+          //console.log("latestAppVersion:",latestAppVersion?.app_version);
+
+          if(!latestVersion && !latestAppVersion)
+            continue;
+
           let obj = null;
           // insert filename on fota table for this device or update.
-          if(device?.app_version != latestAppVersion.app_version){
+          if(latestAppVersion && device?.app_version != latestAppVersion.app_version){
             obj = {
               model_id : device.model_id,
               target_version : latestVersion.version,

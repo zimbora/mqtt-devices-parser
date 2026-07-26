@@ -28,18 +28,18 @@ var self = module.exports = {
 	  });
 	},
 
-	getLatestVersion : async (modelId,release)=>{
+	getLatestVersion : async (modelId,release,variantId)=>{
 
 	  return new Promise((resolve,reject) => {
 
 	    let query = "";
 		let table = [];
 
-		query = `SELECT version,filename,token,id FROM firmwares where model_id = ? and build_release = ? ORDER BY CAST(SUBSTRING_INDEX(version, '.', 1) AS UNSIGNED) DESC,
+		query = `SELECT version,filename,token,id FROM firmwares where model_id = ? and build_release = ? and variant_id = ? ORDER BY CAST(SUBSTRING_INDEX(version, '.', 1) AS UNSIGNED) DESC,
 		 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(version, '.', 2), '.', -1) AS UNSIGNED) DESC,
 		 CAST(SUBSTRING_INDEX(version, '.', -1) AS UNSIGNED) DESC
 		 LIMIT 1`;
-		table = [modelId,release];
+		table = [modelId,release,variantId];
 
 	    query = mysql.format(query,table);
 
@@ -57,18 +57,18 @@ var self = module.exports = {
 	  });
 	},
 
-	getLatestAppVersion : async (modelId,release)=>{
+	getLatestAppVersion : async (modelId,release,variantId)=>{
 
 	  return new Promise((resolve,reject) => {
 
 	    let query = "";
 		let table = [];
 
-		query = `SELECT app_version,filename,token,id FROM firmwares where model_id = ? and build_release = ? ORDER BY CAST(SUBSTRING_INDEX(app_version, '.', 1) AS UNSIGNED) DESC,
+		query = `SELECT app_version,filename,token,id FROM firmwares where model_id = ? and build_release = ? and variant_id = ? ORDER BY CAST(SUBSTRING_INDEX(app_version, '.', 1) AS UNSIGNED) DESC,
 		 CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(app_version, '.', 2), '.', -1) AS UNSIGNED) DESC,
 		 CAST(SUBSTRING_INDEX(app_version, '.', -1) AS UNSIGNED) DESC
 		 LIMIT 1`;
-		table = [modelId,release];
+		table = [modelId,release,variantId];
 
 	    query = mysql.format(query,table);
 
