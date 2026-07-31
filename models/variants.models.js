@@ -3,7 +3,6 @@ module.exports = (sequelize,DataTypes)=>{
 	return sequelize.define("variants", {
 		name: {
 			type: DataTypes.STRING,
-			unique: true
 		},
 		model_id: {
 			type: DataTypes.INTEGER,
