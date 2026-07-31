@@ -88,7 +88,3 @@ To activate the project you just need to add the project in config/index.js file
 projects: {
 	demo : process.env.demo || true
 }
-
-
-
-
