@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.28
+	test: Add comprehensive Jest test suite for device.js module (#2)
+	feat: scope FOTA checks to device variant_id (#11)
+	doc(device): recover readme add test.md file
+	fix(models/variants): remove unique true from column name
+	ci: fix vulnerabilities
+	
 ## 1.0.27
 	feat(db): adds variants table
 	
