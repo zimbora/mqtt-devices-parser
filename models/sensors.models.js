@@ -3,7 +3,7 @@ module.exports = (sequelize,DataTypes)=>{
 	return sequelize.define("sensors", {
 		model_id: { // reference a model
 			type: DataTypes.INTEGER,
-			allowNull: false,
+			allowNull: true,
 			references: {
 				model: 'models',
 				key: 'id'
