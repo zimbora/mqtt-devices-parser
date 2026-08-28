@@ -140,6 +140,7 @@ var self = module.exports = {
 
             try{
               payload = JSON.parse(payload);
+              //console.log(`[KAFKA] payload: ${payload.mqtt.payload}`);
             }catch(error){
               console.log(`[KAFKA] error: ${payload}`);
               console.log(error)

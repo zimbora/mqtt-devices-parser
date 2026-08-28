@@ -266,7 +266,6 @@ var self = module.exports = {
     }
   },
 
-
   updateSensor : async (device,ref,payload)=>{
 
     let sensors = await $.db_device.getSensorsByRef(device.id,ref)
@@ -319,11 +318,20 @@ var self = module.exports = {
 
   handleMqttTopic : async(device, dbTopic, payload, set)=>{
     if(set){
+      if(payload === "" || payload == null){
+        // acknowledgment
+        $.db_device.setSynchedTopic(dbTopic.id,true);
+        $.db_device.updateRemoteTopic(dbTopic.id,dbTopic?.localData?.value ? dbTopic.localData.value : dbTopic?.localData);
+        return;
+      }
       // update local topic
       $.db_device.updateLocalTopic(dbTopic.id,payload)
       .then(()=>{
         // set as not synched
-        $.db_device.setSynchedTopic(dbTopic.id,false);
+        if(isDeepStrictEqual(payload, dbTopic?.remoteData))
+          $.db_device.setSynchedTopic(dbTopic.id,true);
+        else
+          $.db_device.setSynchedTopic(dbTopic.id,false);
       })
       .catch((error)=>{
         console.error(error);
@@ -485,7 +493,8 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         }
       }
       break;
-    case "settings":
+    case "settings": // deprecated
+      break;
       if(topic.endsWith("/set")){
         updateLocalSettings(device,topic,payload);
       }else{
@@ -525,19 +534,25 @@ async function synchMqttTopic(device,dbTopic){
   let mqtt_prefix = `${project.name}/${device.uid}`;
   let topic = `${mqtt_prefix}/${dbTopic.topic}/set`
   let payload = "";
-  if(dbTopic?.remoteData && typeof dbTopic?.remoteData === 'object'){
+  if(dbTopic?.localData && typeof dbTopic?.localData === 'object'){
     try{
-      payload = JSON.stringify(dbTopic?.remoteData);
+      if(dbTopic?.localData?.value)
+        payload = JSON.stringify(dbTopic?.localData?.value);
+      else
+        payload = JSON.stringify(dbTopic?.localData);
     }catch(err){
       console.error(err);
       return;
     }
   }else{
-    payload = dbTopic?.remoteData;
+    payload = dbTopic?.localData;
   }
   $.mqtt_client.publish(topic,payload,{qos:1,retain:false});
 }
 
+// keep a struct with all settings configured on the device
+// only topics <project>/<uid>/settings are stored on this struct
+// easier way to return all settings at once
 async function updateLocalSettings(device,topic,payload){
 
   $.db_device.addLog(device.id,"local_settings",JSON.stringify(payload));
@@ -586,6 +601,9 @@ async function updateLocalSettings(device,topic,payload){
   }
 }
 
+// keep a struct with all settings configured on the device
+// only topics <project>/<uid>/settings are stored on this struct
+// easier way to return all settings at once
 async function updateRemoteSettings(device,topic,payload){
 
   $.db_device.addLog(device.id,"remote_settings",JSON.stringify(payload));
@@ -629,13 +647,15 @@ async function updateRemoteSettings(device,topic,payload){
 
   try {
     await $.db_device.updateRemoteSettings(JSON.stringify(settings), device.id);
-    if(device?.synch)
+    // deprecated, only defined topics with synch enabled can be synched
+    if(device?.synch && false)
       synchSettings(device,route[0]);
   } catch (err) {
     console.error("Failed to update local settings:", err);
   }
 }
 
+// deprecated - only defined mqtt topics can be synched
 async function synchSettings(device,key){
 
   console.log(`check topic ${key} from ${device.uid}`);
@@ -646,6 +666,7 @@ async function synchSettings(device,key){
   console.log(remoteSettings)
 
   //let keys = await checkSettings(localSettings,remoteSettings);
+  /*
   if(localSettings?.hasOwnProperty(key) && remoteSettings?.hasOwnProperty(key)){
     if(!isDeepStrictEqual(localSettings?.[key], remoteSettings?.[key])){
       const project = await $.db_project.getById(device.project_id);
@@ -662,8 +683,8 @@ async function synchSettings(device,key){
       }
     }
   }
+  */
 }
-
 
 function handleFotaSuccess (deviceId){
   let object = {
