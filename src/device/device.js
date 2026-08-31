@@ -514,8 +514,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
         }
       }
       break;
-    case "settings": // deprecated
-      break;
+    case "settings":
       if(topic.endsWith("/set")){
         updateLocalSettings(device,topic,payload);
       }else{

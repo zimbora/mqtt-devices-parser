@@ -29,7 +29,8 @@ global.$ = {
     updateLocalTopic: jest.fn(),
     setSynchedTopic: jest.fn(),
     updateRemoteTopic: jest.fn(),
-    getAssociatedDevice: jest.fn()
+    getAssociatedDevice: jest.fn(),
+    addMqttMsgLog: jest.fn()
   },
   db_model: {
     getByName: jest.fn(),
