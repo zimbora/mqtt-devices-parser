@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.29
+	fix(models/sensors): allow null model_id
+	fix: synching mqtt topics
+	feat: stores mqtt messages
+
 ## 1.0.28
 	test: Add comprehensive Jest test suite for device.js module (#2)
 	feat: scope FOTA checks to device variant_id (#11)
