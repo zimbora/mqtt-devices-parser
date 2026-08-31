@@ -335,7 +335,6 @@ var self = module.exports = {
 
       $.db_device.updateLocalTopic(dbTopic.id,payload)
       .then(()=>{
-        // set as not synched
         if(isDeepStrictEqual(payload, dbTopic?.remoteData))
           $.db_device.setSynchedTopic(dbTopic.id,true);
         else
@@ -420,6 +419,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
 
   try{
     payload = JSON.parse(payload);
+    payload = cleanAndParse(payload);
   }catch(error){}
 
   let word = $.parser.getFirstWord(topic);
@@ -725,4 +725,18 @@ function handleFotaError (deviceId, error){
   $.db_fota.updateLog(deviceId,object);
 }
 
-
+function cleanAndParse(payload) {
+  if (typeof payload === 'string') {
+    let cleaned = payload.trim();
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    cleaned = cleaned.replace(/\\"/g, '"');
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      return payload; // fallback: return original if still invalid
+    }
+  }
+  return payload;
+}
