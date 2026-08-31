@@ -33,7 +33,7 @@ var self = module.exports = {
     });
   },
 
-  parseMessage : async (client,topic,payload,retain)=>{
+  parseMessage : async (client,topic,payload,retain,qos=0)=>{
 
     let topic_bck = topic;
     let project_name = null;
@@ -77,6 +77,7 @@ var self = module.exports = {
     if(device.protocol.toLowerCase() === "lwm2m"){
       parseLwm2mMessage(client, project_name, device, topic, payload, action);
     }else if(device.protocol.toLowerCase() === "mqtt"){
+      $.db_device.addMqttMsgLog(device.id,topic,payload,retain,qos);
       parseMqttMessage(client, project_name, device, topic, payload, retain);
     }
   },
@@ -322,9 +323,16 @@ var self = module.exports = {
         // acknowledgment
         $.db_device.setSynchedTopic(dbTopic.id,true);
         $.db_device.updateRemoteTopic(dbTopic.id,dbTopic?.localData?.value ? dbTopic.localData.value : dbTopic?.localData);
+        let from = "device";
+        let action = "ack"
+        $.db_device.addMqttLog(device.id,dbTopic.id,from,action,null);
         return;
       }
       // update local topic
+      let from = "server";
+      let action = "write";
+      $.db_device.addMqttLog(device.id,dbTopic.id,from,action,JSON.stringify(payload));
+
       $.db_device.updateLocalTopic(dbTopic.id,payload)
       .then(()=>{
         // set as not synched
@@ -338,6 +346,10 @@ var self = module.exports = {
       })
     }else{
       // update remote topic
+      let from = "device";
+      let action = "update";
+      $.db_device.addMqttLog(device.id,dbTopic.id,from,action,JSON.stringify(payload));
+
       $.db_device.updateRemoteTopic(dbTopic.id,payload)
       .then(async (res)=>{
         // check if topics mismatch
@@ -391,8 +403,17 @@ async function parseLwm2mMessage(client, project_name, device, topic, payload, a
 
 async function parseMqttMessage(client, project_name, device, topic, payload, retain){
 
-  if(topic.endsWith("/get"))
+  if(topic.endsWith("/get")){
+    let findTopic = $.parser.getWordBeforeLastSlash(topic);
+    const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
+    if(dbTopic != null){
+      let from = "server";
+      let action = "request";
+      let data = null;
+      $.db_device.addMqttLog(device.id,dbTopic.id,from,action,data);
+    }
     return;
+  }
 
   const topicBck = topic;
   //console.log("[MQTT] parse topic: ",topic);

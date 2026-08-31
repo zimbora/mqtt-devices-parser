@@ -216,6 +216,56 @@ var self = module.exports = {
 		});
 	},
 
+	addMqttLog : async(deviceId,dbTopicId,from,action,payload)=>{
+		return new Promise((resolve,reject) => {
+
+			const timestamp = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			let obj = {
+				createdAt : timestamp,
+				updatedAt : timestamp
+			};
+
+			obj['device_id'] = deviceId;
+			obj['mqtt_id'] = dbTopicId;
+			obj['source'] = from;
+			obj['action'] = action;
+			obj['payload'] = payload;
+
+			$.db.insert("logs_mqtt",obj)
+			.then (rows => {
+				return resolve(rows);
+			})
+			.catch(error => {
+				return reject(error);
+			});
+		});
+	},
+
+	addMqttMsgLog : async(deviceId,topic,payload,retain,qos)=>{
+		return new Promise((resolve,reject) => {
+
+			const timestamp = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+			let obj = {
+				createdAt : timestamp,
+				updatedAt : timestamp
+			};
+
+			obj['device_id'] = deviceId;
+			obj['topic'] = topic;
+			obj['payload'] = payload;
+			obj['retain'] = retain;
+			obj['qos'] = qos;
+
+			$.db.insert("logs_mqtt_msgs",obj)
+			.then (rows => {
+				return resolve(rows);
+			})
+			.catch(error => {
+				return reject(error);
+			});
+		});
+	},
+
 	addLogIfChanged : async(id,column,value)=>{
 		return new Promise(async (resolve,reject) => {
 
