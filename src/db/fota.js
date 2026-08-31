@@ -96,7 +96,14 @@ var self = module.exports = {
 			      return resolve(rows[0]);
 			    })
 			    .catch(error => {
-			      return reject(error);
+			      if(error.code === 'ER_DUP_ENTRY'){
+			        let filter = { device_id : deviceId };
+			        $.db.update("fota",obj,filter)
+			        .then(rows => { return resolve(rows[0]); })
+			        .catch(err => { return reject(err); });
+			      }else{
+			        return reject(error);
+			      }
 			    });
 
 			}else{
