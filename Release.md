@@ -2,6 +2,7 @@
 
 ## Before release
 
+  run npm test
   increases version on package.json
   run npm install
   edit changelog
