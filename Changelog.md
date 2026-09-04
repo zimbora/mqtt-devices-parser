@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.30
+	fix: tests, recover "settings" parsing, deal with new call addMqttMsgLog
+	doc: update Release
+	fix: handle ER_DUP_ENTRY race condition in fota.update() (#14)
+	perf(src/device/device): clean and parse mqtt payload
+
 ## 1.0.29
 	fix(models/sensors): allow null model_id
 	fix: synching mqtt topics
@@ -11,7 +17,7 @@
 	doc(device): recover readme add test.md file
 	fix(models/variants): remove unique true from column name
 	ci: fix vulnerabilities
-	
+
 ## 1.0.27
 	feat(db): adds variants table
 	

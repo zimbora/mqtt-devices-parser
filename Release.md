@@ -4,7 +4,7 @@
 
   run npm test
   increases version on package.json
-  run npm install
+  run npm install (check vulnerabilities)
   edit changelog
   commit and push to repo
 
