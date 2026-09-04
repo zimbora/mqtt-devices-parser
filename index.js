@@ -1,3 +1,4 @@
+const logger = require('./src/logger').child({ label: 'MQTT' });
 const mqtt = require("mqtt");
 const fs = require('fs').promises;
 
@@ -133,7 +134,7 @@ var self = module.exports = {
 
 function mqtt_connect(){
 
-  console.log(`[MQTT] connecting to ${$.config.mqtt.host}:${$.config.mqtt.port}..`)
+  logger.info(`[MQTT] connecting to ${$.config.mqtt.host}:${$.config.mqtt.port}..`)
 
   const mqtt_prefix = $.config.mqtt.logs_path+"/"+$.config.mqtt.client;
   let checkFota = null;
@@ -167,18 +168,18 @@ function mqtt_connect(){
           $.mqtt_client.publish(mqtt_prefix+"/"+project,"deactive",{qos:2,retain:true});
       };
     })
-    console.log(`[MQTT] connected`);
+    logger.info(`[MQTT] connected`);
 
     if (!$.config.kafka.enabled) {
       projects.map( project=>{
-        console.log("[MQTT] subscribing project:",project);
+        logger.info("[MQTT] subscribing project:",project);
         $.mqtt_client.subscribe(project+"/#", (err) => {
           if(err){
-            console.log("[MQTT] error");
-            console.error(err);
+            logger.info("[MQTT] error");
+            logger.error(err);
           }
           else
-            console.log("[MQTT] subscribed to project:",project);
+            logger.info("[MQTT] subscribed to project:",project);
         })
       })
     }
@@ -203,34 +204,34 @@ function mqtt_connect(){
     // Only parse MQTT messages if enabled in configuration
     if (!$.config.kafka.enabled) {
 
-      console.log(`[MQTT] rx: ${topic.toString()}`);
+      logger.info(`[MQTT] rx: ${topic.toString()}`);
       // payload is Buffer
       $.device.parseMessage($.mqtt_client,topic.toString(),payload.toString(),packet.retain);
     }
   });
 
   $.mqtt_client.on("reconnect",()=>{
-    console.log("[MQTT] reconnected")
+    logger.info("[MQTT] reconnected")
   });
 
   $.mqtt_client.on("close",()=>{
-    console.log("[MQTT] closed")
+    logger.info("[MQTT] closed")
     checkFota = null;
   });
 
   $.mqtt_client.on("offline",()=>{
-    console.log("[MQTT] offline")
+    logger.info("[MQTT] offline")
     checkFota = null;
   });
 
   $.mqtt_client.on("disconnect",(packet)=>{
-    console.log(`[MQTT] disconnected`);
-    console.log(packet);
+    logger.info(`[MQTT] disconnected`);
+    logger.info(packet);
     checkFota = null;
   })
 
   $.mqtt_client.on("error",(error)=>{
-    console.log("[MQTT] error");
-    console.error(error)
+    logger.info("[MQTT] error");
+    logger.error(error)
   })
 }

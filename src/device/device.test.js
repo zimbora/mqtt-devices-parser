@@ -76,13 +76,24 @@ global.BASE_DIR = '/mock/base/dir';
 
 // Mock require for project modules
 jest.mock('fs');
+jest.mock('../logger', () => {
+  const logger = {
+    child: jest.fn(() => logger),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  };
+  return logger;
+});
 
 const device = require('./device');
+const logger = require('../logger');
 
 describe('Device Module', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
+    logger.child.mockImplementation(() => logger);
 
     // Setup default mock implementations
     $.db.connect.mockImplementation((config, callback) => callback());
@@ -319,15 +330,11 @@ describe('Device Module', () => {
       $.db.getTables.mockResolvedValue(mockTables);
       $.db.deleteOldEntries.mockResolvedValue();
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       await device.deleteLogs();
 
       expect($.db.getTables).toHaveBeenCalled();
       expect($.db.deleteOldEntries).toHaveBeenCalledTimes(2); // Only log tables
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('deleting logs of table'));
-
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('deleting logs of table'));
     });
   });
 
