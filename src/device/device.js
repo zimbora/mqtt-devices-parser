@@ -510,7 +510,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       break;
     case "fw":
       if(topic === "fota/update/status"){
-        handleFotaError(device.id, payload);
+        self.handleFotaError(device.id, payload);
       }else{
         let word = $.parser.getFirstWord(topic);
         if(typeof payload === 'object' && payload !== null){
