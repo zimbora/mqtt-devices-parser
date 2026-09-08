@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'Device' });
 const moment = require('moment');
 const { isDeepStrictEqual } = require('node:util');
 
@@ -6,15 +7,17 @@ const table = "sensors"
 const logs_table = "logs_sensor";
 const semver = require('semver');
 
+const deviceLogger = (device) => logger.child({ deviceId: device?.uid || device?.id });
+
 var self = module.exports = {
 
   init : async (config,projects)=>{
     return new Promise(async (resolve,reject) => {
       $.db.connect(config,()=>{
-        console.log("MYSQL is connected");
+        logger.info("MYSQL is connected");
 
         projects.map( async (name,counter)=>{
-          console.log("project:",name)
+          logger.info("project:",name)
           _project[name] = {
             module : null
           };
@@ -92,10 +95,10 @@ var self = module.exports = {
       const oneWeekAgo = moment().utc().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
       if(tableName.startsWith("logs_")){
         const uptimeSeconds = Math.floor(process.uptime());
-        console.log(`deleting logs of table ${tableName} older than ${oneWeekAgo}"`);
+        logger.info(`deleting logs of table ${tableName} older than ${oneWeekAgo}"`);
         await $.db.deleteOldEntries(tableName, { createdAt: oneWeekAgo });
         time = Math.floor(process.uptime()) - uptimeSeconds;
-        console.log(`Logs of table ${tableName} deleted in ${time}s`);
+        logger.info(`Logs of table ${tableName} deleted in ${time}s`);
       }
     }
   },
@@ -109,7 +112,7 @@ var self = module.exports = {
 
     for (const model of models) {
       
-      //console.log("model:",model?.name);
+      //logger.info("model:",model?.name);
       if(!model?.id)
         continue;
 
@@ -139,8 +142,8 @@ var self = module.exports = {
           }
 
           const { latestVersion, latestAppVersion } = firmwareCache.get(cacheKey);
-          //console.log("latestVersion:",latestVersion?.version);
-          //console.log("latestAppVersion:",latestAppVersion?.app_version);
+          //logger.info("latestVersion:",latestVersion?.version);
+          //logger.info("latestAppVersion:",latestAppVersion?.app_version);
 
           if(!latestVersion && !latestAppVersion)
             continue;
@@ -175,20 +178,20 @@ var self = module.exports = {
 
               if (res == null) {
                 try {
-                  console.log("add fota entry for device:", device.uid);
+                  deviceLogger(device).info("add fota entry");
                   await $.db_fota.update(device.id, obj);
                 } catch (err) {
-                  console.error("Error updating FOTA entry:", err);
+                  deviceLogger(device).error({ err }, "Error updating FOTA entry");
                 }
               }
               
             } catch (error) {
-              console.error("Error getting or processing FOTA entry:", error);
+              deviceLogger(device).error({ err: error }, "Error getting or processing FOTA entry");
             }
           }
         }
       }catch(error){
-        console.error(error);
+        logger.error(error);
         continue;
       }
     }
@@ -237,7 +240,7 @@ var self = module.exports = {
             topic = mqtt_prefix+"/fw/fota/update/set";
           }
           let link = `${$.config.web.protocol}${$.config.web.domain}${$.config.web.fw_path}${firmware?.filename}/download?token=${firmware?.token}`;
-          console.log(`Requesting firmware update for ${device.uid} to ${firmware?.filename}`);
+          deviceLogger(device).info(`Requesting firmware update to ${firmware?.filename}`);
           $.mqtt_client.publish(topic,`{"url":"${link}"}`,{qos:1,retain:false});
 
           let obj = {
@@ -341,7 +344,7 @@ var self = module.exports = {
           $.db_device.setSynchedTopic(dbTopic.id,false);
       })
       .catch((error)=>{
-        console.error(error);
+        logger.error(error);
       })
     }else{
       // update remote topic
@@ -364,7 +367,7 @@ var self = module.exports = {
         }
       })
       .catch((error)=>{
-        console.error(error);
+        logger.error(error);
       })
 
     }
@@ -392,7 +395,7 @@ var self = module.exports = {
 
 async function parseLwm2mMessage(client, project_name, device, topic, payload, action){
 
-  console.log("parse lwm2m message: ",topic);
+  deviceLogger(device).info({ topic }, "parse lwm2m message");
 
   try{
     payload = JSON.parse(payload);
@@ -420,6 +423,8 @@ async function parseLwm2mMessage(client, project_name, device, topic, payload, a
 
 async function parseMqttMessage(client, project_name, device, topic, payload, retain){
 
+  const log = deviceLogger(device);
+
   if(topic.endsWith("/get")){
     let findTopic = $.parser.getWordBeforeLastSlash(topic);
     const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
@@ -433,7 +438,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   }
 
   const topicBck = topic;
-  //console.log("[MQTT] parse topic: ",topic);
+  //logger.info("[MQTT] parse topic: ",topic);
 
   try{
     payload = JSON.parse(payload);
@@ -518,7 +523,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
             let rows = await $.db_data.updateJson("fw",device.id,payload);
             rows = await $.db_data.addJsonLog("logs_fw",device.id,payload,word);
           }catch(error){
-            console.error(error)
+            log.error(error)
           } 
         }else if(typeof payload !== 'object' && payload !== null){
           // change it to topic.startsWith("fw")
@@ -527,7 +532,7 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
             let rows = await $.db_data.update("fw",device.id,column,payload);
             rows = await $.db_data.addLog("logs_fw",device.id,column,payload);
           }catch(error){
-            console.error(error)
+            log.error(error)
           } 
         }
       }
@@ -579,7 +584,7 @@ async function synchMqttTopic(device,dbTopic){
       else
         payload = JSON.stringify(dbTopic?.localData);
     }catch(err){
-      console.error(err);
+      logger.error(err);
       return;
     }
   }else{
@@ -598,7 +603,7 @@ async function updateLocalSettings(device,topic,payload){
   let route = topic.split("/");
 
   if (route == null || route.length == 0) {
-    console.warn("updateLocalSettings: topic invalid:", topic);
+    deviceLogger(device).warn({ topic }, "updateLocalSettings: topic invalid");
     return;
   }
 
@@ -627,7 +632,7 @@ async function updateLocalSettings(device,topic,payload){
   if (typeof payload === 'object' && !Array.isArray(payload)) {
     Object.assign(obj, payload);
   } else {
-    console.warn("Payload is not a valid object:", payload);
+    deviceLogger(device).warn({ payload }, "Payload is not a valid object");
     return;
   }
 
@@ -635,7 +640,7 @@ async function updateLocalSettings(device,topic,payload){
     // Update the settings in the database
     await $.db_device.updateLocalSettings(JSON.stringify(settings), device.id);
   } catch (err) {
-    console.error("Failed to update local settings:", err);
+    deviceLogger(device).error({ err }, "Failed to update local settings");
   }
 }
 
@@ -649,7 +654,7 @@ async function updateRemoteSettings(device,topic,payload){
   let route = topic.split("/");
 
   if(route == null){
-    console.warn("updateRemoteSettings: topic invalid:",topic);
+    deviceLogger(device).warn({ topic }, "updateRemoteSettings: topic invalid");
     return;
   }
   // Parse existing settings
@@ -689,19 +694,19 @@ async function updateRemoteSettings(device,topic,payload){
     if(device?.synch && false)
       synchSettings(device,route[0]);
   } catch (err) {
-    console.error("Failed to update local settings:", err);
+    deviceLogger(device).error({ err }, "Failed to update remote settings");
   }
 }
 
 // deprecated - only defined mqtt topics can be synched
 async function synchSettings(device,key){
 
-  console.log(`check topic ${key} from ${device.uid}`);
+  logger.info(`check topic ${key} from ${device.uid}`);
   // Retrieve existing settings
   let localSettings = await $.db_device.getLocalSettings(device.id);
-  console.log(localSettings)
+  logger.info(localSettings)
   let remoteSettings = await $.db_device.getRemoteSettings(device.id);
-  console.log(remoteSettings)
+  logger.info(remoteSettings)
 
   //let keys = await checkSettings(localSettings,remoteSettings);
   /*
@@ -712,12 +717,12 @@ async function synchSettings(device,key){
       let topic = `${mqtt_prefix}/settings/${key}/set`
       try{
         const payload = JSON.stringify(localSettings[key]);
-        console.log(`updating key: ${key} with data:`);
-        console.log(payload);
+        logger.info(`updating key: ${key} with data:`);
+        logger.info(payload);
         $.mqtt_client.publish(topic,payload,{qos:1,retain:false});
       }catch(err){
-        console.error(localSettings[key])
-        console.error(err);
+        logger.error(localSettings[key])
+        logger.error(err);
       }
     }
   }

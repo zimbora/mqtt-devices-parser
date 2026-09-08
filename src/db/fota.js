@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'FOTA database' });
 const moment = require('moment');
 var mysql = require('mysql2')
 
@@ -74,7 +75,7 @@ var self = module.exports = {
 		  return resolve(rows);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });

@@ -1,3 +1,4 @@
+const logger = require('../src/logger').child({ label: 'Models' });
 const fs = require('fs').promises;
 const path = require('path');
 const { Sequelize, DataTypes } = require("sequelize");
@@ -27,11 +28,11 @@ var self = module.exports = {
       sequelize
         .authenticate()
         .then(() => {
-          console.log('Connection has been established successfully.');
+          logger.info('Connection has been established successfully.');
           return resolve();
         })
         .catch((error) => {
-          console.error('Unable to connect to the database: ', error);
+          logger.error('Unable to connect to the database: ', error);
           return reject();
         });
     });
@@ -52,7 +53,7 @@ var self = module.exports = {
 
         // Use a for...of loop to load models sequentially
         for (const file of files) {
-          console.log(`Sync file ${file}`);
+          logger.info(`Sync file ${file}`);
           const model = require(path.join(modelsPath, file));
           await model(sequelize, DataTypes); // Ensure each model is loaded before moving to the next
         }
@@ -70,11 +71,11 @@ var self = module.exports = {
       sequelize
         .sync({ alter: true })
         .then(async () => {
-          console.log('All tables were synced!');
+          logger.info('All tables were synced!');
           return resolve();
         })
         .catch((error) => {
-          console.error('Unable to create table : ', error);
+          logger.error('Unable to create table : ', error);
           return reject();
         });
     });
@@ -84,7 +85,7 @@ var self = module.exports = {
     return new Promise((resolve, reject) => {
       let tables = Object.keys(sequelize.models);
 
-      console.log(tables);
+      logger.info(tables);
       if (!tables?.length) return resolve();
 
       tables.forEach(async (tableName, counter) => {
@@ -126,7 +127,7 @@ var self = module.exports = {
             sequelize
               .query(query)
               .then((res) => {
-                console.log(`Dropped index ${index.Key_name}`);
+                logger.info(`Dropped index ${index.Key_name}`);
                 if (counter === filteredIndexes.length - 1) return resolve();
               })
               .catch((error) => {
@@ -187,14 +188,14 @@ var self = module.exports = {
       })
         .then(([user, created]) => {
           if (created) {
-            console.log('New user created:', type);
+            logger.info('New user created:', type);
           } else {
-            console.log('User already exists:', type);
+            logger.info('User already exists:', type);
           }
           return resolve(user);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          logger.error('Error:', error);
           return reject(error);
         });
     });
@@ -212,14 +213,14 @@ var self = module.exports = {
       })
         .then(([client, created]) => {
           if (created) {
-            console.log('New client created:', nick);
+            logger.info('New client created:', nick);
           } else {
-            console.log('Client already exists:', nick);
+            logger.info('Client already exists:', nick);
           }
           return resolve(client);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          logger.error('Error:', error);
           return reject(error);
         });
     });
@@ -240,14 +241,14 @@ var self = module.exports = {
       })
         .then(([client, created]) => {
           if (created) {
-            console.log('New project created:', project?.name);
+            logger.info('New project created:', project?.name);
           } else {
-            console.log('Project already exists:', project?.name);
+            logger.info('Project already exists:', project?.name);
           }
           return resolve(client);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          logger.error('Error:', error);
           return reject(error);
         });
     });
@@ -270,10 +271,10 @@ var self = module.exports = {
           return { record, created };
         })
       );
-      console.log("Insert/Update completed for LwM2M Objects.");
+      logger.info("Insert/Update completed for LwM2M Objects.");
       return results;
     } catch (error) {
-      console.error("Error inserting/updating LwM2M Objects:", error.message);
+      logger.error("Error inserting/updating LwM2M Objects:", error.message);
       throw error;
     }
   },
@@ -296,10 +297,10 @@ var self = module.exports = {
           return { record, created };
         })
       );
-      console.log("Insert/Update completed for LwM2M Resources.");
+      logger.info("Insert/Update completed for LwM2M Resources.");
       return results;
     } catch (error) {
-      console.error("Error inserting/updating LwM2M Resources:", error.message);
+      logger.error("Error inserting/updating LwM2M Resources:", error.message);
       throw error;
     }
   },
@@ -353,7 +354,7 @@ var self = module.exports = {
       } else {
         // Skip invalid entries but warn
         // eslint-disable-next-line no-console
-        console.warn('Skipping invalid resource entry:', entry);
+        logger.warn('Skipping invalid resource entry:', entry);
       }
     }
 
@@ -393,11 +394,11 @@ var self = module.exports = {
       });
 
       // eslint-disable-next-line no-console
-      console.log('Insert/Update completed for LwM2M Resources.');
+      logger.info('Insert/Update completed for LwM2M Resources.');
       return results;
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error inserting/updating LwM2M Resources:', error.message);
+      logger.error('Error inserting/updating LwM2M Resources:', error.message);
       throw error;
     }
   }

@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'Device database' });
 const moment = require('moment');
 var mysql = require('mysql2')
 
@@ -18,7 +19,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -39,7 +40,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -60,7 +61,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -81,7 +82,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -102,7 +103,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -123,7 +124,7 @@ var self = module.exports = {
 					return resolve(null);
 			})
 			.catch( err => {
-				console.log(err);
+				logger.info(err);
 				return resolve(null);
 			});
 		});
@@ -453,7 +454,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });
@@ -474,7 +475,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });

@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'Kafka' });
 const { Kafka, logLevel } = require('kafkajs');
 const fs = require('fs');
 
@@ -12,11 +13,11 @@ var self = module.exports = {
     return new Promise(async (resolve, reject) => {
       try {
         if (!config.kafka.enabled) {
-          console.log("[Kafka] consumer is disabled");
+          logger.info("[Kafka] consumer is disabled");
           return resolve();
         }
 
-        console.log("[Kafka] Initializing consumer...");
+        logger.info("[Kafka] Initializing consumer...");
 
         // Generate a random 6-digit number
         const randomNumber = Math.floor(100000 + Math.random() * 900000);
@@ -31,7 +32,7 @@ var self = module.exports = {
         };
 
         if(config.kafka.ssl.enabled === true){
-          console.log("[Kafka] Try to establish SSL connection..");
+          logger.info("[Kafka] Try to establish SSL connection..");
           if(config.kafka.ssl.rejectUnauthorized){
             // check certificate. Most secure
             kafkaConfig.ssl = {
@@ -48,7 +49,7 @@ var self = module.exports = {
 
         // Add SASL authentication if credentials provided
         if (config.kafka.sasl.username && config.kafka.sasl.password) {
-          console.log("[Kafka] SASL: username and password are defined");
+          logger.info("[Kafka] SASL: username and password are defined");
           kafkaConfig.sasl = {
             mechanism: config.kafka.sasl.mechanism,
             username: config.kafka.sasl.username,
@@ -86,7 +87,7 @@ var self = module.exports = {
         const topics = projects.map(project => project.toString());
         
         if (topics.length === 0) {
-          console.log("[Kafka] No topics to subscribe to");
+          logger.info("[Kafka] No topics to subscribe to");
           return resolve();
         }
 
@@ -95,11 +96,11 @@ var self = module.exports = {
           fromBeginning: false 
         });
 
-        console.log(`[Kafka] consumer subscribed to topics: ${topics.join(', ')}`);
+        logger.info(`[Kafka] consumer subscribed to topics: ${topics.join(', ')}`);
 
         return resolve();
       } catch (error) {
-        console.error("[Kafka] Failed to initialize consumer:", error);
+        logger.error("[Kafka] Failed to initialize consumer:", error);
         return reject(error);
       }
     });
@@ -111,13 +112,13 @@ var self = module.exports = {
     }
 
     try {
-      console.log("[Kafka] Starting consumer...");
+      logger.info("[Kafka] Starting consumer...");
       running = true;
 
       await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
 
-          console.log(`[KAFKA] rx: ${message.key.toString()}`);
+          logger.info(`[KAFKA] rx: ${message.key.toString()}`);
 
           try {
             let payload = message.value ? message.value.toString() : '';
@@ -140,17 +141,17 @@ var self = module.exports = {
 
             try{
               payload = JSON.parse(payload);
-              //console.log(`[KAFKA] payload: ${payload.mqtt.payload}`);
+              //logger.info(`[KAFKA] payload: ${payload.mqtt.payload}`);
             }catch(error){
-              console.log(`[KAFKA] error: ${payload}`);
-              console.log(error)
+              logger.info(`[KAFKA] error: ${payload}`);
+              logger.info(error)
             }
 
             // Call the device parser with formatted topic
             await $.device.parseMessage(payload.client.id, formattedTopic, JSON.stringify(payload.mqtt.payload), payload.mqtt.retain);
 
           } catch (error) {
-            console.error('[Kafka] Error processing message:', {
+            logger.error('[Kafka] Error processing message:', {
               topic: topic.toString(),
               partition,
               offset: message.offset ? message.offset.toString() : 'unknown',
@@ -160,9 +161,9 @@ var self = module.exports = {
         },
       });
 
-      console.log("[Kafka] consumer started successfully");
+      logger.info("[Kafka] consumer started successfully");
     } catch (error) {
-      console.error("[KAFKA] Failed to start consumer:", error);
+      logger.error("[KAFKA] Failed to start consumer:", error);
       running = false;
       throw error;
     }
@@ -174,13 +175,13 @@ var self = module.exports = {
     }
 
     try {
-      console.log("[KAFKA] Stopping consumer...");
+      logger.info("[KAFKA] Stopping consumer...");
       running = false;
       await consumer.stop();
       await consumer.disconnect();
-      console.log("[KAFKA] consumer stopped successfully");
+      logger.info("[KAFKA] consumer stopped successfully");
     } catch (error) {
-      console.error("[KAFKA] Error stopping consumer:", error);
+      logger.error("[KAFKA] Error stopping consumer:", error);
     }
   },
 
@@ -192,7 +193,7 @@ var self = module.exports = {
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
   if (running) {
-    console.log('Received SIGINT, gracefully shutting down Kafka consumer...');
+    logger.info('Received SIGINT, gracefully shutting down Kafka consumer...');
     await self.stop();
   }
   process.exit(0);
@@ -200,7 +201,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   if (running) {
-    console.log('Received SIGTERM, gracefully shutting down Kafka consumer...');
+    logger.info('Received SIGTERM, gracefully shutting down Kafka consumer...');
     await self.stop();
   }
   process.exit(0);
