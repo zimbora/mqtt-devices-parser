@@ -370,6 +370,24 @@ var self = module.exports = {
     }
   },
 
+  handleFotaSuccess: async (deviceId)=>{
+    let object = {
+      "nAttempts" : 0,
+      "fUpdate" : 0,
+    }
+    $.db_fota.update(deviceId,object);
+    object = {
+      success : 1,
+    }
+    $.db_fota.updateLog(deviceId,object);
+  },
+
+  handleFotaError: async (deviceId, error)=>{
+    let object = {
+      error : error,
+    }
+    $.db_fota.updateLog(deviceId,object);
+  }
 }
 
 async function parseLwm2mMessage(client, project_name, device, topic, payload, action){
@@ -480,14 +498,14 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
       if (payload != null && payload != device?.version) {
         $.db_device.addLog(device.id,"version",payload);
         $.db_device.update(device.id, "version", payload);
-        handleFotaSuccess(device.id);
+        self.handleFotaSuccess(device.id);
       }
       break;
     case "app_version":
       if (payload != null && payload != device?.app_version) {
         $.db_device.addLog(device.id,"app_version",payload);
         $.db_device.update(device.id, "app_version", payload);
-        handleFotaSuccess(device.id);
+        self.handleFotaSuccess(device.id);
       }
       break;
     case "fw":
@@ -704,25 +722,6 @@ async function synchSettings(device,key){
     }
   }
   */
-}
-
-function handleFotaSuccess (deviceId){
-  let object = {
-    "nAttempts" : 0,
-    "fUpdate" : 0,
-  }
-  $.db_fota.update(deviceId,object);
-  object = {
-    success : 1,
-  }
-  $.db_fota.updateLog(deviceId,object);
-}
-
-function handleFotaError (deviceId, error){
-  let object = {
-    error : error,
-  }
-  $.db_fota.updateLog(deviceId,object);
 }
 
 function cleanAndParse(payload) {
