@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.31
+	fix: handleFotaSuccess, make it public
+	
 ## 1.0.30
 	fix: tests, recover "settings" parsing, deal with new call addMqttMsgLog
 	doc: update Release
