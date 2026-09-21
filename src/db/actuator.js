@@ -95,7 +95,7 @@ var self = module.exports = {
 		return new Promise((resolve,reject) => {
 			let obj = {
 				device_id : deviceId,
-				sensor_id : actuatorId,
+				actuator_id : actuatorId,
 				value : payload?.value,
 				error : payload?.error,
 				remoteUnixTs : payload?.timestamp, // local timestamp
@@ -131,8 +131,8 @@ var self = module.exports = {
 
 		return new Promise((resolve,reject) => {
 
-		    let query = "SELECT id FROM ??";
-		    let args = [table];
+		    let query = "SELECT id FROM ?? WHERE actuator_id = ? AND confirmed = 0 ORDER BY id DESC LIMIT 1";
+		    let args = [table,actuatorId];
 		    query = mysql.format(query,args);
 
 		    $.db.queryRow(query)
@@ -151,7 +151,6 @@ var self = module.exports = {
 
 	confirmMessage: async(table,lastLogId)=>{
 
-		const table = "actuators";
 		let obj = {
 			confirmed : true
 		}

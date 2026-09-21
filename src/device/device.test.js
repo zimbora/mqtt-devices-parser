@@ -26,6 +26,7 @@ global.$ = {
     getById: jest.fn(),
     getMqttTopic: jest.fn(),
     getSensorsByRef: jest.fn(),
+    getActuatorsByRef: jest.fn(),
     updateLocalTopic: jest.fn(),
     setSynchedTopic: jest.fn(),
     updateRemoteTopic: jest.fn(),
@@ -89,6 +90,7 @@ describe('Device Module', () => {
     $.db_project.getByName.mockResolvedValue(null);
     $.db_device.getMqttTopic.mockResolvedValue(null);
     $.db_device.getSensorsByRef.mockResolvedValue([]);
+    $.db_device.getActuatorsByRef.mockResolvedValue([]);
   });
 
   describe('init', () => {

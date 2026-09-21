@@ -323,27 +323,27 @@ var self = module.exports = {
     const table = "actuators"
     const logs_table = "logs_actuators";
 
-    let actuators = await $.db_device.getactuatorsByRef(device.id,ref)
+    if (typeof $.db_device?.getActuatorsByRef !== 'function')
+      return;
+
+    let actuators = await $.db_device.getActuatorsByRef(device.id,ref)
 
     if(!actuators?.length)
       return;
 
-    object = payload;
-    value = null;
-    error = null;
-    timestamp = null;
+    const object = payload;
     
     actuators.map( (actuator,index) =>{
       let value = null;
       let error = null;
-      if(actuator?.type === "json" && typeof object === 'object'){
-        if(object.hasOwnProperty(actuator?.property)){
+      if(actuator?.type === "json" && object !== null && typeof object === 'object'){
+        if(Object.hasOwnProperty.call(object,actuator?.property)){
           value = object[actuator.property];
         }
       }else{
         if (typeof object === 'object') {
-          value = object?.value || object?.v;
-          error = object?.error || object?.e;
+          value = object?.value ?? object?.v;
+          error = object?.error ?? object?.e;
         }else{
           value = payload;
         }
@@ -360,11 +360,11 @@ var self = module.exports = {
         }
 
         $.db_actuator.update(table,data,filter);
-        if(payload == null)
+        if(payload == null){
           let lastLogId = $.db_actuator.getLastLogId(logs_table,actuatorId);
           if(lastLogId != null)
             $.db_actuator.confirmMessage(logs_table,lastLogId);
-        else
+        }else
           $.db_actuator.insert(logs_table,device.id,actuator.id,data);    
       }
     })
