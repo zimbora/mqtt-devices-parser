@@ -21,7 +21,11 @@ module.exports = (sequelize,DataTypes)=>{
         onUpdate: 'CASCADE'
       },
       value: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      error: {
+        type: DataTypes.STRING,
         allowNull: true
       },
       confirmed: {

@@ -38,6 +38,10 @@ module.exports = (sequelize,DataTypes)=>{
       defaultValue: ''
     },
     value: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    error: {
       type: DataTypes.TEXT,
       allowNull: true
     },
