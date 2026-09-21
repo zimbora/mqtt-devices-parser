@@ -42,6 +42,12 @@ global.$ = {
     getByRef: jest.fn(),
     insert: jest.fn()
   },
+  db_actuator: {
+    update: jest.fn(),
+    insert: jest.fn(),
+    getLastLogId: jest.fn(),
+    confirmMessage: jest.fn()
+  },
   db_data: {
     updateJson: jest.fn(),
     addJsonLog: jest.fn(),
@@ -307,6 +313,41 @@ describe('Device Module', () => {
 
       expect($.db_device.update).not.toHaveBeenCalled();
       expect($.db_device.addLog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateActuator', () => {
+    it('should update a matched actuator and insert a log for a non-null payload', async () => {
+      const mockDevice = { id: 42 };
+      const actuator = {
+        id: 7,
+        ref: 'mode',
+        type: 'number'
+      };
+
+      $.db_device.getActuatorsByRef.mockResolvedValue([actuator]);
+
+      await device.updateActuator(mockDevice, 'mode', { value: 1 });
+
+      expect($.db_actuator.update).toHaveBeenCalledWith('actuators', { value: 1, error: undefined }, { id: 7 });
+      expect($.db_actuator.insert).toHaveBeenCalledWith('logs_actuators', 42, 7, { value: 1, error: undefined });
+    });
+
+    it('should confirm the last actuator log when payload is null', async () => {
+      const mockDevice = { id: 42 };
+      const actuator = {
+        id: 9,
+        ref: 'fan',
+        type: 'number'
+      };
+
+      $.db_device.getActuatorsByRef.mockResolvedValue([actuator]);
+      $.db_actuator.getLastLogId.mockResolvedValue(15);
+
+      await device.updateActuator(mockDevice, 'fan', null);
+
+      expect($.db_actuator.getLastLogId).toHaveBeenCalledWith('logs_actuators', 9);
+      expect($.db_actuator.confirmMessage).toHaveBeenCalledWith('logs_actuators', 15);
     });
   });
 

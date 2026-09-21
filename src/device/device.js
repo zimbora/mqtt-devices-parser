@@ -323,9 +323,6 @@ var self = module.exports = {
     const table = "actuators"
     const logs_table = "logs_actuators";
 
-    if (typeof $.db_device?.getActuatorsByRef !== 'function')
-      return;
-
     let actuators = await $.db_device.getActuatorsByRef(device.id,ref)
 
     if(!actuators?.length)
@@ -333,7 +330,7 @@ var self = module.exports = {
 
     const object = payload;
     
-    actuators.map( (actuator,index) =>{
+    for (const actuator of actuators) {
       let value = null;
       let error = null;
       if(actuator?.type === "json" && object !== null && typeof object === 'object'){
@@ -348,7 +345,7 @@ var self = module.exports = {
           value = payload;
         }
       }
-      if(value || error){
+      if(payload == null || value || error){
 
         const data = {
           value,
@@ -359,15 +356,15 @@ var self = module.exports = {
           id : actuator.id
         }
 
-        $.db_actuator.update(table,data,filter);
+        await $.db_actuator.update(table,data,filter);
         if(payload == null){
-          let lastLogId = $.db_actuator.getLastLogId(logs_table,actuatorId);
+          const lastLogId = await $.db_actuator.getLastLogId(logs_table,actuator.id);
           if(lastLogId != null)
-            $.db_actuator.confirmMessage(logs_table,lastLogId);
+            await $.db_actuator.confirmMessage(logs_table,lastLogId);
         }else
-          $.db_actuator.insert(logs_table,device.id,actuator.id,data);    
+          await $.db_actuator.insert(logs_table,device.id,actuator.id,data);    
       }
-    })
+    }
   },
 
   handleMqttTopic : async(device, dbTopic, payload, set)=>{
