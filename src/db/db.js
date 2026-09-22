@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'Database' });
 var mysql = require('mysql2');
 
 var pool;
@@ -15,12 +16,12 @@ var self = module.exports = {
     });
     pool.getConnection(function(err,connection){
         if(err) {
-          console.log("ISSUE WITH MYSQL \n" + err);
+          logger.info("ISSUE WITH MYSQL \n" + err);
           process.exit(1);
         } else {
           setInterval(function(){self.pingMySQL(connection);}, 3600000); // 1 hour
           connection.on('error', function(err) {
-            console.log("Mysql error: "+err.code); // 'ER_BAD_DB_ERROR'
+            logger.info("Mysql error: "+err.code); // 'ER_BAD_DB_ERROR'
             process.exit(1);
           });
           cb();
@@ -37,7 +38,7 @@ var self = module.exports = {
   pingMySQL : (connection)=>{
     connection.ping(function (err) {
       if (err) throw err;
-      //console.log(String(Date.now())+'Server responded to ping');
+      //logger.info(String(Date.now())+'Server responded to ping');
     });
   },
 

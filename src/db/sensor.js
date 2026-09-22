@@ -1,3 +1,4 @@
+const logger = require('../logger').child({ label: 'Sensor database' });
 const moment = require('moment');
 var mysql = require('mysql2')
 const table = "sensors"
@@ -20,7 +21,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });
@@ -43,7 +44,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });
@@ -65,7 +66,7 @@ var self = module.exports = {
 	        return resolve(null);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });
@@ -84,7 +85,7 @@ var self = module.exports = {
 		  return resolve(rows);
 	    })
 	    .catch( err => {
-	      console.log(err);
+	      logger.info(err);
 	      return resolve(null);
 	    });
 	  });
