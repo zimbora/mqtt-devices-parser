@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.33
+	feat(db): sensors supports readable option
+	feat(db): supports actuators, template actuators and logs actuators
+	feat: support actuators (actions,template and logs) (#18)
+	perf: Adopt labeled Pino logging (#17)
+	feat: add log.level parameter to config
+
 ## 1.0.32
 	fix: handleFotaError call
 
