@@ -459,6 +459,27 @@ var self = module.exports = {
 	  });
 	},
 
+	getActuatorsByRef : async(deviceId, ref)=>{
+		return new Promise((resolve,reject) => {
+
+	    let query = "SELECT * FROM ?? where device_id = ? and ref = ?";
+	    let args = ["actuators",deviceId,ref];
+	    query = mysql.format(query,args);
+
+	    $.db.queryRow(query)
+	    .then( rows => {
+	      if(rows.length > 0)
+	        return resolve(rows);
+	      else
+	        return resolve(null);
+	    })
+	    .catch( err => {
+	      console.log(err);
+	      return resolve(null);
+	    });
+	  });
+	},
+
 	getMqttTopic : async(deviceId, topic)=>{
 		return new Promise((resolve,reject) => {
 

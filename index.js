@@ -15,6 +15,7 @@ $.db_device = require('./src/db/device');
 $.db_model = require('./src/db/model');
 $.db_firmware = require('./src/db/firmware');
 $.db_sensor = require('./src/db/sensor');
+$.db_actuator = require('./src/db/actuator');
 $.db_fota = require('./src/db/fota');
 $.mqtt_client = null;
 $.parser = require('./src/aux/parser')

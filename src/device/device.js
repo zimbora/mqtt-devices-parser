@@ -2,8 +2,6 @@ const moment = require('moment');
 const { isDeepStrictEqual } = require('node:util');
 
 var _project = [];
-const table = "sensors"
-const logs_table = "logs_sensor";
 const semver = require('semver');
 
 var self = module.exports = {
@@ -269,6 +267,9 @@ var self = module.exports = {
 
   updateSensor : async (device,ref,payload)=>{
 
+    const table = "sensors"
+    const logs_table = "logs_sensor";
+
     let sensors = await $.db_device.getSensorsByRef(device.id,ref)
 
     if(!sensors?.length)
@@ -315,6 +316,55 @@ var self = module.exports = {
         $.db_sensor.insert(logs_table,device.id,sensor.id,data);    
       }
     })
+  },
+
+  updateActuator : async (device,ref,payload)=>{
+
+    const table = "actuators"
+    const logs_table = "logs_actuators";
+
+    let actuators = await $.db_device.getActuatorsByRef(device.id,ref)
+
+    if(!actuators?.length)
+      return;
+
+    const object = payload;
+    
+    for (const actuator of actuators) {
+      let value = null;
+      let error = null;
+      if(actuator?.type === "json" && object !== null && typeof object === 'object'){
+        if(Object.hasOwnProperty.call(object,actuator?.property)){
+          value = object[actuator.property];
+        }
+      }else{
+        if (typeof object === 'object') {
+          value = object?.value ?? object?.v;
+          error = object?.error ?? object?.e;
+        }else{
+          value = payload;
+        }
+      }
+      if(payload == null || value || error){
+
+        const data = {
+          value,
+          error,
+        }
+
+        let filter = {
+          id : actuator.id
+        }
+
+        await $.db_actuator.update(table,data,filter);
+        if(payload == null){
+          const lastLogId = await $.db_actuator.getLastLogId(logs_table,actuator.id);
+          if(lastLogId != null)
+            await $.db_actuator.confirmMessage(logs_table,lastLogId);
+        }else
+          await $.db_actuator.insert(logs_table,device.id,actuator.id,data);    
+      }
+    }
   },
 
   handleMqttTopic : async(device, dbTopic, payload, set)=>{
@@ -553,14 +603,17 @@ async function parseMqttMessage(client, project_name, device, topic, payload, re
   }
 
   const dbTopic = await $.db_device.getMqttTopic(device.id,findTopic)
-  if(dbTopic != null){
+  if(dbTopic != null){ // mqtt topic is known and it's a setting
     self.handleMqttTopic(device,dbTopic,payload,set);
   }
 
-  // check if topic is a sensor
-  if(!set)
-    self.updateSensor(device,topicBck,payload);
   
+  if(!set) // check if topic is a sensor
+    self.updateSensor(device,topicBck,payload);
+  else{ // check if topic is an actuator
+    self.updateActuator(device,findTopic,payload);
+  }
+
   if(_project[project_name]){
     _project[project_name]?.module?.parseMessage(client,project_name,device,`${word}/${topic}`,payload,retain,()=>{});
   }
