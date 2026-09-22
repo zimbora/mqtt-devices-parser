@@ -1,6 +1,9 @@
 module.exports = {
   version : "0.0.0",
   dev : process.env.dev || "true",
+  log : {
+    level : process.env.LOG_LEVEL || "trace"
+  },
   web:{
     protocol : process.env.HTTP_PROTOCOL  || "http://",
     domain: process.env.DOMAIN            || '10.168.1.162',

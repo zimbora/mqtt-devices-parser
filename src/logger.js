@@ -1,7 +1,9 @@
 const pino = require('pino');
+$ = {};
+$.config = require('../config');
 
 const logger = pino({
-  level: process.env.LOG_LEVEL || 'trace',
+  level: $.config.log.level,
   timestamp: false,
   
   base: {
